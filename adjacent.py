@@ -4,6 +4,8 @@ Created on 6 Jan 2017
 @author: lucas
 '''
 
+print('test')
+
 adjacent <- function(x, cells, directions=4, pairs=TRUE, target=NULL, sorted=FALSE, include=FALSE, id=FALSE) {
 
     if (is.character(directions)) { 
