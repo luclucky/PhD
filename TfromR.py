@@ -7,7 +7,7 @@ import numpy as np
 from gdalconst import * 
 from scipy import sparse
 
-def array2raster(newRasterfn,rasterOrigin,pixelWidth,pixelHeight,array):
+def array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array):
 
     array = array[::-1]
 

@@ -3,7 +3,36 @@ Created on 6 Jan 2017
 
 @author: lucas
 '''
-cccc
+
+import gdal, ogr, os, osr
+import numpy as np
+from skimage.graph import route_through_array
+import gdal, ogr, os, osr
+import numpy as np
+from gdalconst import * 
+from scipy import sparse
+
+def function(raster, cells, directions=4, pairs=TRUE, target=NULL, sorted=FALSE, include=FALSE, id=FALSE):
+
+    array = array[::-1]
+
+    cols = array.shape[1]
+    rows = array.shape[0]
+    originX = rasterOrigin[0]
+    originY = rasterOrigin[1]
+
+    driver = gdal.GetDriverByName('GTiff')
+    outRaster = driver.Create(newRasterfn, cols, rows, 1, gdal.GDT_Byte)
+    outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
+    outband = outRaster.GetRasterBand(1)
+    outband.WriteArray(array)
+    outRasterSRS = osr.SpatialReference()
+    outRasterSRS.ImportFromEPSG(25832)
+    outRaster.SetProjection(outRasterSRS.ExportToWkt())
+    outband.FlushCache()
+
+
+
 adjacent <- function(x, cells, directions=4, pairs=TRUE, target=NULL, sorted=FALSE, include=FALSE, id=FALSE) {
 
     if (is.character(directions)) { 
