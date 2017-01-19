@@ -61,19 +61,22 @@ def TM_from_R(raster, transFunc, directions, symm):
             self.pixelHeight = geotransform[5]
             self.transitionMatrix = sparse.csc_matrix(np.zeros(shape = (raster.RasterXSize * raster.RasterYSize, raster.RasterXSize * raster.RasterYSize)))
             self.transitionCells = range(1, raster.RasterXSize * raster.RasterYSize + 1)
+            self.Values = ''
+
         
     TR = TransitionLayer(raster, geotransform)
-    TR.__dict__
 
     transitionMatr = TR.transitionMatrix
-    
-    TR.__dict__
-    
+        
     cells = filter(lambda x: x!=None, [y for x in np.array(raster.GetRasterBand(1).ReadAsArray()).tolist() for y in x])
     cellsDV = cells
-    cells.sort()
+    #cells.sort()
+        
+    directions = 8 # comment 
         
     adj = adjacent(raster, cells=cells, pairs=True, target=cells, directions=directions)
+
+    symm = False # comment
 
     if(symm):
         
@@ -85,13 +88,15 @@ def TM_from_R(raster, transFunc, directions, symm):
             
     dataVals = [cellsDV[i-1] for i in adj[0]], [cellsDV[i-1] for i in adj[1]]    
     
-    trans_values = [np.mean(i) for i in zip(dataVals[0],dataVals[1])] 
+    def transFunc(i):   # comment
+        j = np.mean(i)  # comment
+        return j        # comment
+    
+    trans_values = [transFunc(i) for i in zip(dataVals[0],dataVals[1])] 
     
     if trans_values < 0:
         print("WARNING: transition function gives negative values")
     
-    transitionMatr[adj] <- as.vector(trans_values)
-
     j = 0
 
     for i in zip(adj[0],adj[1]):
@@ -102,16 +107,24 @@ def TM_from_R(raster, transFunc, directions, symm):
         
     #transitionMatr.toarray() 
     
-    if(symm)
-    {
-        transitionMatr <- forceSymmetric(transitionMatr)
-    }
+    if(symm):
+        
+        from rpy2.robjects.numpy2ri import numpy2ri
+        rpy2.robjects.numpy2ri.activate()
+        
+        forceSymmetric = rpy2.robjects.r['forceSymmetric']
+        
+        asMATRIX = rpy2.robjects.r['as.matrix']
+
+        transitionMatr = sparse.csr_matrix(np.array(asMATRIX(forceSymmetric(transitionMatr.toarray()))))
+        
+    TR.transitionMatrix = transitionMatr
+
+    TR.Values = "conductance"
     
-    transitionMatrix(tr) <- transitionMatr
-    
-    matrixValues(tr) <- "conductance"
-    
-    return(tr)
+    TR.__dict__
+
+    return(TR)
     
 }
 
