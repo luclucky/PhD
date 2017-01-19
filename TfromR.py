@@ -2,10 +2,17 @@
 import gdal, ogr, os, osr
 import numpy as np
 from skimage.graph import route_through_array
-import gdal, ogr, os, osr
-import numpy as np
 from gdalconst import * 
 from scipy import sparse
+import xyCell
+import numpy as np
+
+import rpy2
+
+from rpy2.robjects.packages import importr
+
+Matrix = importr('Matrix')
+stats = importr('stats')
 
 def array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array):
 
@@ -56,16 +63,58 @@ def TM_from_R(raster, transFunc, directions, symm):
             self.transitionCells = range(1, raster.RasterXSize * raster.RasterYSize + 1)
         
     TR = TransitionLayer(raster, geotransform)
+    TR.__dict__
+
+    transitionMatr = TR.transitionMatrix
     
-    #TR.__dict__
+    TR.__dict__
     
-    Cells = filter(lambda x: x!=None, [y for x in np.array(raster.GetRasterBand(1).ReadAsArray()).tolist() for y in x])
+    cells = filter(lambda x: x!=None, [y for x in np.array(raster.GetRasterBand(1).ReadAsArray()).tolist() for y in x])
+    cellsDV = cells
+    cells.sort()
         
+    adj = adjacent(raster, cells=cells, pairs=True, target=cells, directions=directions)
+
+    if(symm):
+        
+        adj0 = [i for i,j in zip(adj[0],adj[1]) if i < j]
+        adj1 = [j for i,j in zip(adj[0],adj[1]) if i < j]
+        
+        adj[0] = adj0
+        adj[1] = adj1
+            
+    dataVals = [cellsDV[i-1] for i in adj[0]], [cellsDV[i-1] for i in adj[1]]    
     
+    trans_values = [np.mean(i) for i in zip(dataVals[0],dataVals[1])] 
     
+    if trans_values < 0:
+        print("WARNING: transition function gives negative values")
     
+    transitionMatr[adj] <- as.vector(trans_values)
+
+    j = 0
+
+    for i in zip(adj[0],adj[1]):
+        
+        transitionMatr[i[0]-1, i[1]-1] = trans_values[j]
+
+        j = j+1
+        
+    #transitionMatr.toarray() 
     
+    if(symm)
+    {
+        transitionMatr <- forceSymmetric(transitionMatr)
+    }
     
+    transitionMatrix(tr) <- transitionMatr
+    
+    matrixValues(tr) <- "conductance"
+    
+    return(tr)
+    
+}
+
     
     
     
