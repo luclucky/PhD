@@ -6,38 +6,38 @@ from gdalconst import *
 from scipy import sparse
 import xyCell
 import numpy as np
-
 import rpy2
 
 from rpy2.robjects.packages import importr
 
 Matrix = importr('Matrix')
 stats = importr('stats')
+raster = importr('raster')
 
-def array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array):
-
-    array = array[::-1]
-
-    cols = array.shape[1]
-    rows = array.shape[0]
-    originX = rasterOrigin[0]
-    originY = rasterOrigin[1]
-
-    driver = gdal.GetDriverByName('GTiff')
-    outRaster = driver.Create(newRasterfn, cols, rows, 1, gdal.GDT_Byte)
-    outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
-    outband = outRaster.GetRasterBand(1)
-    outband.WriteArray(array)
-    outRasterSRS = osr.SpatialReference()
-    outRasterSRS.ImportFromEPSG(25832)
-    outRaster.SetProjection(outRasterSRS.ExportToWkt())
-    outband.FlushCache()
-
-rasterOrigin = (0,0)
-pixelWidth = 10
-pixelHeight = 10
-newRasterfn = '/home/lucas/PhD/test.tif'
-array = np.array([[ 1, 2, 3],[ 4, 5, 6],[ 7, 8, 9]])
+# def array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array):
+# 
+#     array = array[::-1]
+# 
+#     cols = array.shape[1]
+#     rows = array.shape[0]
+#     originX = rasterOrigin[0]
+#     originY = rasterOrigin[1]
+# 
+#     driver = gdal.GetDriverByName('GTiff')
+#     outRaster = driver.Create(newRasterfn, cols, rows, 1, gdal.GDT_Byte)
+#     outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
+#     outband = outRaster.GetRasterBand(1)
+#     outband.WriteArray(array)
+#     outRasterSRS = osr.SpatialReference()
+#     outRasterSRS.ImportFromEPSG(25832)
+#     outRaster.SetProjection(outRasterSRS.ExportToWkt())
+#     outband.FlushCache()
+# 
+# rasterOrigin = (0,0)
+# pixelWidth = 10
+# pixelHeight = 10
+# newRasterfn = '/home/lucas/PhD/test.tif'
+# array = np.array([[ 1, 2, 3],[ 4, 5, 6],[ 7, 8, 9]])
 
 #####
 
@@ -57,6 +57,10 @@ def TM_from_R(raster, transFunc, directions, symm):
             self.ncols = raster.RasterYSize
             self.crs = srs.GetAttrValue("AUTHORITY", 1)
             self.rasterOrigin = geotransform[0],geotransform[3]
+            self.xmin = geotransform[0]
+            self.ymin = geotransform[3]
+            self.xmax = geotransform[0] + geotransform[1] * raster.RasterXSize
+            self.ymax = geotransform[3] + geotransform[5] * raster.RasterYSize
             self.pixelWidth = geotransform[1]
             self.pixelHeight = geotransform[5]
             self.transitionMatrix = sparse.csc_matrix(np.zeros(shape = (raster.RasterXSize * raster.RasterYSize, raster.RasterXSize * raster.RasterYSize)))

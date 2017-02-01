@@ -17,7 +17,7 @@ def cellFromXY(raster, dd):
     x = dd[0]
     y = dd[1] 
 
-    cell = xyCell.doCellFromXY(ncols,nrows,xmin,xmax,ymin,ymax,x,y)
+    cell = xyCell.doCellFromXY(ncols, nrows, xmin, xmax, ymin, ymax, x, y)
 
     return(cell)
 
