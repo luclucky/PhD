@@ -4,9 +4,9 @@ Created on 25 Jan 2017
 @author: lucas
 '''
 
-sP = [[10.0, 0.0], [30.0, 20.0]]
+#sP = [[10.0, 0.0], [30.0, 20.0]]
 
-def rSPDistance(tr, start, aim, theta, totalNet="net", method=1)
+def rSPDistance(tr, start, aim, theta, totalNet="net", method=1):
 
     if(theta < 0 | theta > 20):
         
@@ -16,8 +16,8 @@ def rSPDistance(tr, start, aim, theta, totalNet="net", method=1)
         
        return("method should be either 1 or 2")
     
-    cellnri = cellFromXY(tr, start)
-    cellnrj = cellFromXY(tr, aim)
+    cellnri = cell_From_XY(tr, start)
+    cellnrj = cell_From_XY(tr, aim)
     
     transition = transitionSolidify(tr)
     
@@ -28,10 +28,11 @@ def rSPDistance(tr, start, aim, theta, totalNet="net", method=1)
         
     trM = transitionMatrix(tr, inflate=False)
     
-    .rSPDist(trM, ci, cj, theta, totalNet, method)
+    rsP = rSPDist(trM, ci, cj, theta, totalNet, method)
 
+    return(rsP)
 
-def cellFromXY(tr, sP): 
+def cell_From_XY(tr, sP): 
 
     inherits = rpy2.robjects.r['inherits']
 
@@ -78,7 +79,7 @@ def transitionSolidify(tr):
     return(tr)
 
 
-def rSPDist(trM, ci, cj, theta, totalNet, method)
+def rSPDist(trM, ci, cj, theta, totalNet, method):
 
     trR = sparse.csc_matrix(trM)
     trR.data = 1/trR.data
@@ -109,7 +110,7 @@ def rSPDist(trM, ci, cj, theta, totalNet, method)
   
     D = np.zeros((len(ci),len(cj)), float)
   
-    for(j in range(len(cj))):
+    for j in range(len(cj)):
     
         ij = np.zeros((nr), float)
         ij.fill(1.0)
@@ -117,38 +118,39 @@ def rSPDist(trM, ci, cj, theta, totalNet, method)
     
         ij[cj[j],cj[j]] = 0
         
-        W.toarray()
-
         Wj = sparse.csc_matrix(W.multiply(ij).toarray())
 
         #Wj.toarray()
         
         IdMinusWj = ID - Wj
         
+        ej = nr[1] * [0]
                
-        ej <- rep(0,times=nr)
-        ej[cj[j]] <- 1
-        zcj <- solve(IdMinusWj, ej)
+        ej[cj[j]] = 1
+        
+        zcj = np.linalg.solve(IdMinusWj.toarray(), ej)
+            
+        for i in range(len(ci)):
+         
+            ei = nr[1] * [0]
+               
+            ei[ci[i]] = 1
+        
+            zci = np.linalg.solve(np.transpose(IdMinusWj).toarray(),ei)
+                                    
+            zcij = (zcj * ei).sum()
     
-        for(i in 1:length(ci))
-        {
-            ei <- rep(0,times=nr)
-            ei[ci[i]] <- 1
-            zci <- solve(t(IdMinusWj),ei)
-            zcij <- sum(ei*zcj)
+            N = sparse.csc_matrix(np.dot(np.dot(np.diag(zci), Wj.toarray()),np.diag(zcj)) / zcij)
 
-            N <- (Diagonal(nr, as.vector(zci)) %*% Wj %*% Diagonal(nr, as.vector(zcj))) / zcij
+            if(totalNet == "net"):
       
-      if(totalNet == "net"):
+                N = ((N - np.transpose(N)) * 0.5) * 2
       
-        N <- skewpart(N) * 2 #N is here the NET number of passages, like McRae-random walk
-        N@x[N@x<0] <- 0
+                N.data = np.where(N.data > 0, N.data, 0) 
       
 
       # Computation of the cost dij between node i and node j
-            D[i,j] <-  sum(trR * N)
-            
-    }
-    }
-    
+            D[i,j] = trR.multiply(N).sum(axis=1).sum()
+      
     return(D)
+

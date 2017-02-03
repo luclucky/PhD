@@ -12,7 +12,7 @@ from rpy2.robjects.packages import importr
 
 Matrix = importr('Matrix')
 stats = importr('stats')
-raster = importr('raster')
+#raster = importr('raster')
 
 # def array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array):
 # 
@@ -41,7 +41,7 @@ raster = importr('raster')
 
 #####
 
-raster = gdal.Open('/home/lucas/PhD/test.tif')
+#raster = gdal.Open('/home/lucas/PhD/test.tif')
 
 def TM_from_R(raster, transFunc, directions, symm):
     
@@ -58,9 +58,9 @@ def TM_from_R(raster, transFunc, directions, symm):
             self.crs = srs.GetAttrValue("AUTHORITY", 1)
             self.rasterOrigin = geotransform[0],geotransform[3]
             self.xmin = geotransform[0]
-            self.ymin = geotransform[3]
+            self.ymax = geotransform[3]
             self.xmax = geotransform[0] + geotransform[1] * raster.RasterXSize
-            self.ymax = geotransform[3] + geotransform[5] * raster.RasterYSize
+            self.ymin = geotransform[3] + geotransform[5] * raster.RasterYSize
             self.pixelWidth = geotransform[1]
             self.pixelHeight = geotransform[5]
             self.transitionMatrix = sparse.csc_matrix(np.zeros(shape = (raster.RasterXSize * raster.RasterYSize, raster.RasterXSize * raster.RasterYSize)))
@@ -80,6 +80,8 @@ def TM_from_R(raster, transFunc, directions, symm):
         
     adj = adjacent(raster, cells=cells, pairs=True, target=cells, directions=directions)
 
+    adj = [map(int,adj[0]), map(int,adj[1])]
+    
     symm = False # comment
 
     if(symm):
@@ -129,14 +131,4 @@ def TM_from_R(raster, transFunc, directions, symm):
     TR.__dict__
 
     return(TR)
-    
-}
-
-    
-    
-    
-    
-    
-    
-    
     

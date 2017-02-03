@@ -11,9 +11,9 @@ def xres(raster):
     
     geoTransform = raster.GetGeoTransform()
     xmin = geoTransform[0]
-    ymin = geoTransform[3]
+    ymax = geoTransform[3]
     xmax = xmin + geoTransform[1] * raster.RasterXSize
-    ymax = ymin + geoTransform[5] * raster.RasterYSize
+    ymin = ymax + geoTransform[5] * raster.RasterYSize
             
     return(xmax - xmin) / ncols
 
@@ -24,9 +24,9 @@ def yres(raster):
     
     geoTransform = raster.GetGeoTransform()
     xmin = geoTransform[0]
-    ymin = geoTransform[3]
+    ymax = geoTransform[3]
     xmax = xmin + geoTransform[1] * raster.RasterXSize
-    ymax = ymin + geoTransform[5] * raster.RasterYSize
+    ymin = ymax + geoTransform[5] * raster.RasterYSize
     
     return (ymax - ymin) / nrows
 
@@ -37,11 +37,12 @@ def res(raster):
     
     geoTransform = raster.GetGeoTransform()
     xmin = geoTransform[0]
-    ymin = geoTransform[3]
+    ymax = geoTransform[3]
     xmax = xmin + geoTransform[1] * raster.RasterXSize
-    ymax = ymin + geoTransform[5] * raster.RasterYSize
+    ymin = ymax + geoTransform[5] * raster.RasterYSize
     
     xr = (xmax - xmin) / ncols 
     yr = (ymax - ymin) / nrows
     
     return [xr, yr]
+

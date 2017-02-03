@@ -4,6 +4,20 @@ Created on 6 Jan 2017
 @author: lucas
 '''
 
+
+def isgloballonglat(x):
+        
+    geotransform = x.GetGeoTransform() 
+
+    res = False
+        
+    if (geotransform[0] + geotransform[1] * x.RasterXSize == 180) & (geotransform[0] == -180):
+                    
+        res = True
+      
+    return(res)
+
+
 def adjacent(raster, cells, directions=8, pairs=True, target=None, sorted=False, include=False, id=False):
 
     r = res(raster)
@@ -46,6 +60,10 @@ def adjacent(raster, cells, directions=8, pairs=True, target=None, sorted=False,
         directions = directions + 1
   
     dd = [d[0:len(d)/2] , d[len(d)/2:len(d)]]
+    
+    if isgloballonglat(raster):
+        
+        dd[0] = [(i+180) % 360 - 180 for i in dd[0]] 
 
     if (pairs):
         
@@ -103,6 +121,4 @@ def adjacent(raster, cells, directions=8, pairs=True, target=None, sorted=False,
             ddd = zip(*ddd)        
             
     return(ddd)
-
-
 

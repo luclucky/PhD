@@ -4,15 +4,24 @@ Created on 16 Jan 2017
 @author: lucas
 '''
 
-def cellFromXY(raster, dd):
+def cellFromXY(tr, dd):
     
-    geoTransform = raster.GetGeoTransform()
-    xmin = geoTransform[0]
-    ymin = geoTransform[3]
-    xmax = xmin + geoTransform[1] * raster.RasterXSize
-    ymax = ymin + geoTransform[5] * raster.RasterYSize
-    nrows = raster.RasterXSize
-    ncols = raster.RasterYSize    
+    try: 
+        geoTransform = tr.GetGeoTransform()
+        xmin = geoTransform[0]
+        ymax = geoTransform[3]
+        xmax = xmin + geoTransform[1] * tr.RasterXSize
+        ymin = ymax + geoTransform[5] * tr.RasterYSize
+        nrows = tr.RasterXSize
+        ncols = tr.RasterYSize    
+    
+    except:
+        xmin = tr.ncols
+        ymin = tr.nrows
+        xmax = tr.xmin
+        ymax = tr.xmax
+        nrows = tr.ymin
+        ncols = tr.ymax
     
     x = dd[0]
     y = dd[1] 
@@ -20,4 +29,3 @@ def cellFromXY(raster, dd):
     cell = xyCell.doCellFromXY(ncols, nrows, xmin, xmax, ymin, ymax, x, y)
 
     return(cell)
-
