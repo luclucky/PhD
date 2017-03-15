@@ -130,33 +130,71 @@ habitats_shortpath_red = cursor.fetchall()
 
 habitats_shortpath_red = np.array(habitats_shortpath_red).T
 
-habitats_QUAL = np.random.random_sample((100,)) # creates ramdom HQs
+habitats_QUAL = np.random.random_sample((100,))  # creates ramdom HQs
 
-cursor.execute("CREATE TABLE dispresal100_SH2_pro2 (pts_id bigint);")
+habitats_QUAL[np.where(habitats_QUAL < 0.25)] = 0.25
+
+#cursor.execute("CREATE TABLE habitats_qual (pts_id bigint, quality float);")
+#hqINS = str(np.array([range(100+1)[1:], habitats_QUAL]).T.tolist())[1:-1].replace('[','(').replace(']',')')
+#cursor.execute("INSERT INTO habitats_qual (pts_id, quality) VALUES "+hqINS+";") 
+
+cursor.execute("CREATE TABLE dispresal100_SH2_pro2_todo (pts_id bigint);")
+
+conn.commit()
 
 for xxxx in range(100):
     
     print('run ' + str(xxxx))
         
-    cursor.execute("ALTER TABLE dispresal100_SH2_pro2 ADD run_"+str(xxxx+1)+"_timestep bigint;")
+    cursor.execute("ALTER TABLE dispresal100_SH2_pro2_todo ADD firstcol_"+str(xxxx+1)+"_timestep bigint, ADD origin_"+str(xxxx+1)+"_timestep bigint, ADD numindiv_"+str(xxxx+1)+"_timestep bigint;")
     
-    startHABITATS = np.random.choice(np.unique([habitats_shortpath_red[0], habitats_shortpath_red[1]]), 2)# number of occupied habitats first run
-    occHABITATS = np.array([range(100+1)[1:], [999] * 100, [999] * 100]) # 100: should be len(test_pts_shift)
-    
+    startHABITATS = np.random.choice(np.unique([habitats_shortpath_red[0], habitats_shortpath_red[1]]), 2).astype(int) # number of occupied habitats first run
+        
+    print(startHABITATS)
+        
+    startHABITATS_HQ = habitats_QUAL[startHABITATS-1]
+
+    occHABITATS = np.array([range(100+1)[1:], [-999] * 100, [-999] * 100, [0] * 100]) # 100: should be len(test_pts_shift)
+                
     occHABITATS[1][(startHABITATS-1).tolist()] = 0
     occHABITATS[2][(startHABITATS-1).tolist()] = 0
+    occHABITATS[3][(startHABITATS-1).tolist()] = (startHABITATS_HQ * 100).astype(int)
 
     timeSTEPS = 100
     
     proB = (1 - (habitats_shortpath_red[2] / np.amax(habitats_shortpath_red[2])))**2 # function to calculate the probability of reaching new habitat
         
-    plt.plot( sorted(habitats_shortpath_red[2], reverse=False), sorted(proB, reverse=True))
+    #plt.plot( sorted(habitats_shortpath_red[2], reverse=False), sorted(proB, reverse=True))
     #plt.xlabel('Costs')
     #plt.ylabel('Probability')
-    plt.grid(True)
+    #plt.grid(True)
   
     for x in range(timeSTEPS):
-                        
+        
+        startHABITATS = startHABITATS[np.where(occHABITATS[3][startHABITATS-1] >= 25)]
+        
+        startHABITATS_HQ = habitats_QUAL[startHABITATS-1]
+        
+        extPROB = np.random.choice(100,2)
+
+        for xxxxx in range(len(extPROB)):
+
+            if extPROB[xxxxx] in startHABITATS:
+                                
+                ind = np.where(startHABITATS == extPROB[xxxxx])[0].tolist()  
+                                
+                yn = np.random.choice([1, 0], 1, p=[1-startHABITATS_HQ[ind][0], startHABITATS_HQ[ind][0]])[0]
+                
+                if yn == 1:
+                
+                    startHABITATS = np.delete(startHABITATS, ind)
+                    
+                    occHABITATS[1][(extPROB[xxxxx]-1).tolist()] = -111
+                    occHABITATS[2][(extPROB[xxxxx]-1).tolist()] = -111
+                    occHABITATS[3][(extPROB[xxxxx]-1).tolist()] = 0
+                    
+                    #print('DEATH ' + str(extPROB[xxxxx]))
+            
         for xx in range(len(startHABITATS)):
 
             conHABITATS_ind = np.hstack(np.array([np.where(habitats_shortpath_red[0] == startHABITATS[xx])[0].tolist(), np.where(habitats_shortpath_red[1] == startHABITATS[xx])[0].tolist()]).flat).tolist()
@@ -171,33 +209,43 @@ for xxxx in range(100):
             
                 if yn == 1:
                     
-                    if occHABITATS[1][habitats_shortpath_red[0][xxx]-1] == 999:
+                    if occHABITATS[0][habitats_shortpath_red[0][xxx]-1] != startHABITATS[xx]:
                         
-                        occHABITATS[1][habitats_shortpath_red[0][xxx]-1] = x+1
+                        if occHABITATS[1][habitats_shortpath_red[0][xxx]-1] in (-111, -999):
                         
+                            occHABITATS[1][habitats_shortpath_red[0][xxx]-1] = x+1
+
                         occHABITATS[2][habitats_shortpath_red[0][xxx]-1] = startHABITATS[xx]
-                        
+                                    
+                        if occHABITATS[3][habitats_shortpath_red[0][xxx]-1] < (habitats_QUAL[occHABITATS[0][habitats_shortpath_red[0][xxx]-1]-1]*100).astype(int):        
+                                                                       
+                            occHABITATS[3][habitats_shortpath_red[0][xxx]-1] = occHABITATS[3][habitats_shortpath_red[0][xxx]-1] + (startHABITATS_HQ[xx]*25).astype(int)
+
                         startHABITATS, ind = np.unique(np.append(startHABITATS,[occHABITATS[0][habitats_shortpath_red[0][xxx]-1]]), return_index=True)
                         startHABITATS = startHABITATS[np.argsort(ind)]
                         
-                    if occHABITATS[1][habitats_shortpath_red[1][xxx]-1] == 999:
-                        
-                        occHABITATS[1][habitats_shortpath_red[1][xxx]-1] = x+1
+                    if occHABITATS[0][habitats_shortpath_red[1][xxx]-1] != startHABITATS[xx]:
+                           
+                        if occHABITATS[1][habitats_shortpath_red[1][xxx]-1] in (-111, -999):
+                                                    
+                            occHABITATS[1][habitats_shortpath_red[1][xxx]-1] = x+1
         
                         occHABITATS[2][habitats_shortpath_red[1][xxx]-1] = startHABITATS[xx]
+                        
+                        if occHABITATS[3][habitats_shortpath_red[1][xxx]-1] < (habitats_QUAL[occHABITATS[0][habitats_shortpath_red[1][xxx]-1]-1]*100).astype(int):        
+                            
+                            occHABITATS[3][habitats_shortpath_red[1][xxx]-1] = occHABITATS[3][habitats_shortpath_red[1][xxx]-1] + (startHABITATS_HQ[xx]*25).astype(int)
 
                         startHABITATS, ind = np.unique(np.append(startHABITATS,[occHABITATS[0][habitats_shortpath_red[1][xxx]-1]]), return_index=True)
                         startHABITATS = startHABITATS[np.argsort(ind)]
-                        
-    toINS = str(np.array(occHABITATS[0:2]).T.tolist())[1:-1]
-    toINS = toINS.replace('[','(')
-    toINS = toINS.replace(']',')')
+                
+    toINS = str(np.array(occHABITATS).T.tolist())[1:-1].replace('[','(').replace(']',')')
     
     if xxxx == 0:
-        cursor.execute("INSERT INTO dispresal100_SH2_pro2 (pts_id, run_"+str(xxxx+1)+"_timestep) VALUES "+toINS+";") 
+        cursor.execute("INSERT INTO dispresal100_SH2_pro2_todo (pts_id, firstcol_"+str(xxxx+1)+"_timestep, origin_"+str(xxxx+1)+"_timestep, numindiv_"+str(xxxx+1)+"_timestep) VALUES "+toINS+";") 
 
     else:
-        cursor.execute("UPDATE dispresal100_SH2_pro2 SET run_"+str(xxxx+1)+"_timestep = run_"+str(xxxx+1)+"_timestep_arr FROM (VALUES "+toINS+") AS c(pts_id_arr, run_"+str(xxxx+1)+"_timestep_arr) WHERE pts_id = pts_id_arr;;") 
+        cursor.execute("UPDATE dispresal100_SH2_pro2_todo SET firstcol_"+str(xxxx+1)+"_timestep = firstcol_"+str(xxxx+1)+"_timestep_arr, origin_"+str(xxxx+1)+"_timestep = origin_"+str(xxxx+1)+"_timestep_arr, numindiv_"+str(xxxx+1)+"_timestep = numindiv_"+str(xxxx+1)+"_timestep_arr FROM (VALUES "+toINS+") AS c(pts_id_arr, firstcol_"+str(xxxx+1)+"_timestep_arr, origin_"+str(xxxx+1)+"_timestep_arr, numindiv_"+str(xxxx+1)+"_timestep_arr) WHERE pts_id = pts_id_arr;") 
 
 conn.commit()
 
@@ -207,66 +255,6 @@ print(end - start)
 # Close communication with the database
 cursor.close()
 conn.close()
-
-
-
-
-
-
-
-
-
-#raster = gdal.Open('/home/lucas/PhD/r.tif')
-#raster_test = gdal.Open('/home/lucas/PhD/test.tif')
-
-
-# def array2raster(newRasterfn, rasterOrigin, pixelWidth, pixelHeight, array):
-# 
-#     array = array[::-1]
-# 
-#     cols = array.shape[1]
-#     rows = array.shape[0]
-#     originX = rasterOrigin[0]
-#     originY = rasterOrigin[1]
-# 
-#     driver = gdal.GetDriverByName('GTiff')
-#     outRaster = driver.Create(newRasterfn, cols, rows, 1, gdal.GDT_Byte)
-#     outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
-#     outband = outRaster.GetRasterBand(1)
-#     outband.WriteArray(array)
-#     outRasterSRS = osr.SpatialReference()
-#     outRasterSRS.ImportFromEPSG(25832)
-#     outRaster.SetProjection(outRasterSRS.ExportToWkt())
-#     outband.FlushCache()
-# 
-# rasterOrigin = (0,0)
-# pixelWidth = 10
-# pixelHeight = 10
-# newRasterfn = '/home/lucas/PhD/test.tif'
-# array = np.array([[ 1, 2, 3],[ 4, 5, 6],[ 7, 8, 9]])
-
-
-sP = [[10.0, 0.0], [30.0, 20.0]]
-
-def transFunc(i):   
-    j = np.mean(i)  
-    return j       
-    
-tr1 = rSP.TM_from_R(cost_raster, transFunc, directions = 8, symm = False)
-tr1 = rSP.TM_from_R(raster, transFunc, directions = 8, symm = False)
-
-tr1.__dict__
-tr1.transitionMatrix.toarray()
-
-tr = tr1
-start = sP
-aim = sP
-theta = 1
-totalNet="net"
-method=1
-
-aaa = rSP.rSPDistance(tr, start, aim, theta, totalNet="net", method=1)
-
 
 
 
