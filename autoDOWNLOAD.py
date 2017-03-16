@@ -1,4 +1,4 @@
-
+"Biotoptypen (Flächen)"
 from selenium import webdriver
 
 from selenium.webdriver.common import keys
@@ -23,7 +23,7 @@ fire.find_element_by_xpath(".//*[@id='menu']/li[3]/div/ul/li[8]/div/ul/li/span")
 
 element = fire.find_element_by_xpath(".//*[@id='mod_export_layer']")
 
-element.send_keys("bt_f")
+element.send_keys(unicode("Biotoptypen (Flächen)".decode("iso-8859-4")))
 
 element = fire.find_element_by_xpath(".//*[@id='mod_export_format']")
 

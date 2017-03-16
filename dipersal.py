@@ -171,11 +171,12 @@ for xxxx in range(100):
   
     for x in range(timeSTEPS):
         
-        startHABITATS = startHABITATS[np.where(occHABITATS[3][startHABITATS-1] >= 25)]
+        #startHABITATS = startHABITATS[np.where(occHABITATS[3][startHABITATS-1] >= 25)]
         
-        startHABITATS_HQ = habitats_QUAL[startHABITATS-1]
-        
-        extPROB = np.random.choice(100,2)
+        startHABITATS_HQ = habitats_QUAL[startHABITATS-1] # habitat-quality of startHABITATS
+        startHABITATS_IndNR = occHABITATS[3][startHABITATS-1] # number of individuals in startHABITATS
+       
+        extPROB = np.random.choice(100,int(len(startHABITATS)*0.1)) # 0.1 resp. 10 % of startHABITATS may go extinct 
 
         for xxxxx in range(len(extPROB)):
 
@@ -183,7 +184,9 @@ for xxxx in range(100):
                                 
                 ind = np.where(startHABITATS == extPROB[xxxxx])[0].tolist()  
                                 
-                yn = np.random.choice([1, 0], 1, p=[1-startHABITATS_HQ[ind][0], startHABITATS_HQ[ind][0]])[0]
+                redIndNR = np.log2(np.array(startHABITATS_IndNR[ind][0]))/6.75 # log2 function to include number of individuals in extinction prob
+                
+                yn = np.random.choice([1, 0], 1, p=[1-startHABITATS_HQ[ind][0]*redIndNR, startHABITATS_HQ[ind][0]*redIndNR])[0] # 
                 
                 if yn == 1:
                 
@@ -194,7 +197,9 @@ for xxxx in range(100):
                     occHABITATS[3][(extPROB[xxxxx]-1).tolist()] = 0
                     
                     #print('DEATH ' + str(extPROB[xxxxx]))
-            
+                    
+        startHABITATS = startHABITATS[np.where(occHABITATS[3][startHABITATS-1] >= 25)] # startHABITATS with less than 26 individuals are remove from startHABITATS 
+           
         for xx in range(len(startHABITATS)):
 
             conHABITATS_ind = np.hstack(np.array([np.where(habitats_shortpath_red[0] == startHABITATS[xx])[0].tolist(), np.where(habitats_shortpath_red[1] == startHABITATS[xx])[0].tolist()]).flat).tolist()
