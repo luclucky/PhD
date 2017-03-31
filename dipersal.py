@@ -15,6 +15,8 @@ import matplotlib.pyplot as plt
 
 import time
 
+import re
+
 conn = psycopg2.connect("host=localhost port=5432 dbname=DB_PhD user=lucas password=1gis!gis1")
 cursor = conn.cursor()
 
@@ -124,15 +126,25 @@ cursor = conn.cursor()
 
 start = time.time()
 
-cursor.execute("SELECT start, aim, costs FROM habitats_shortpath_red;")
+cursor.execute("SELECT ST_Extent(geom) FROM demo_dispersal_pts;")
+habitats_extent = cursor.fetchall()
+habitats_extent = re.findall(r"[\w']+", habitats_extent[0][0])[1:]
+habitats_extent = [float(i) for i in habitats_extent]
 
+cursor.execute("SELECT id, ST_AsText(geom)FROM demo_dispersal_pts;")
+xy_PTS = cursor.fetchall()
+xy_PTS = [[i[0],re.findall(r"[\w']+",i[1])[1:]] for i in xy_PTS]
+xy_PTS = [[i[0], float(i[1][0]), float(i[1][1])] for i in xy_PTS]
+xy_PTS.sort()
+
+cursor.execute("SELECT start, aim, costs FROM habitats_shortpath_red;")
 habitats_shortpath_red = cursor.fetchall()
 
 habitats_shortpath_red = np.array(habitats_shortpath_red).T
 
 habitats_QUAL = np.random.random_sample((100,))  # creates ramdom HQs
 
-habitats_QUAL[np.where(habitats_QUAL < 0.25)] = 0.25
+habitats_QUAL[np.where(habitats_QUAL < 0.25)] = 0.25 # min HQ set to 0.25
 
 #cursor.execute("CREATE TABLE habitats_qual (pts_id bigint, quality float);")
 #hqINS = str(np.array([range(100+1)[1:], habitats_QUAL]).T.tolist())[1:-1].replace('[','(').replace(']',')')
@@ -164,10 +176,10 @@ for xxxx in range(100):
     
     proB = (1 - (habitats_shortpath_red[2] / np.amax(habitats_shortpath_red[2])))**2 # function to calculate the probability of reaching new habitat
         
-    #plt.plot( sorted(habitats_shortpath_red[2], reverse=False), sorted(proB, reverse=True))
-    #plt.xlabel('Costs')
-    #plt.ylabel('Probability')
-    #plt.grid(True)
+#     plt.plot( sorted(habitats_shortpath_red[2], reverse=False), sorted(proB, reverse=True))
+#     plt.xlabel('Costs')
+#     plt.ylabel('Probability')
+#     plt.grid(True)
   
     for x in range(timeSTEPS):
         
@@ -176,8 +188,14 @@ for xxxx in range(100):
         startHABITATS_HQ = habitats_QUAL[startHABITATS-1] # habitat-quality of startHABITATS
         startHABITATS_IndNR = occHABITATS[3][startHABITATS-1] # number of individuals in startHABITATS
        
-        extPROB = np.random.choice(100,int(len(startHABITATS)*0.1)) # 0.1 resp. 10 % of startHABITATS may go extinct 
+        #extPROB = np.random.choice(100,int(len(startHABITATS)*0.1)) # 0.1 resp. 10 % of startHABITATS may go extinct 
 
+        spatialEVENT = habitats_extent
+             
+        extPROB = [i[0]  for i in xy_PTS if i[1] >= spatialEVENT[0] and i[1] <= spatialEVENT[2] and i[2] >= spatialEVENT[1] and i[2] <= spatialEVENT[3]]
+        
+        stressLEVEL = 0.05
+        
         for xxxxx in range(len(extPROB)):
 
             if extPROB[xxxxx] in startHABITATS:
@@ -186,19 +204,19 @@ for xxxx in range(100):
                                 
                 redIndNR = np.log2(np.array(startHABITATS_IndNR[ind][0]))/6.75 # log2 function to include number of individuals in extinction prob
                 
-                yn = np.random.choice([1, 0], 1, p=[1-startHABITATS_HQ[ind][0]*redIndNR, startHABITATS_HQ[ind][0]*redIndNR])[0] # 
+                yn = np.random.choice([0, 1], 1, p=[1-startHABITATS_HQ[ind][0]*redIndNR*stressLEVEL, startHABITATS_HQ[ind][0]*redIndNR*stressLEVEL])[0] # p extinction gets bigger when low HQ and small number of individuals in H
                 
-                if yn == 1:
+                if yn == 1: # extinction -> individuals set 0
                 
                     startHABITATS = np.delete(startHABITATS, ind)
                     
-                    occHABITATS[1][(extPROB[xxxxx]-1).tolist()] = -111
-                    occHABITATS[2][(extPROB[xxxxx]-1).tolist()] = -111
-                    occHABITATS[3][(extPROB[xxxxx]-1).tolist()] = 0
+                    occHABITATS[1][(extPROB[xxxxx]-1)] = -111
+                    occHABITATS[2][(extPROB[xxxxx]-1)] = -111
+                    occHABITATS[3][(extPROB[xxxxx]-1)] = 0
                     
                     #print('DEATH ' + str(extPROB[xxxxx]))
                     
-        startHABITATS = startHABITATS[np.where(occHABITATS[3][startHABITATS-1] >= 25)] # startHABITATS with less than 26 individuals are remove from startHABITATS 
+        startHABITATS = startHABITATS[np.where(occHABITATS[3][startHABITATS-1] >= 25)] # startHABITATS with less than 25 individuals are remove from startHABITATS 
            
         for xx in range(len(startHABITATS)):
 
@@ -206,7 +224,7 @@ for xxxx in range(100):
         
             if len(conHABITATS_ind) > 3:
                 
-                conHABITATS_ind = np.unique(np.random.choice(conHABITATS_ind, 3, p = (max(habitats_shortpath_red[2][conHABITATS_ind])-habitats_shortpath_red[2][conHABITATS_ind]) /sum(max(habitats_shortpath_red[2][conHABITATS_ind])-habitats_shortpath_red[2][conHABITATS_ind])))
+                conHABITATS_ind = np.unique(np.random.choice(conHABITATS_ind, 3, p = (max(habitats_shortpath_red[2][conHABITATS_ind])-habitats_shortpath_red[2][conHABITATS_ind]) /sum(max(habitats_shortpath_red[2][conHABITATS_ind])-habitats_shortpath_red[2][conHABITATS_ind]))) # weighted p to select 3 H -> weighting accroding to costs 
     
             for xxx in conHABITATS_ind:
                 
@@ -218,13 +236,13 @@ for xxxx in range(100):
                         
                         if occHABITATS[1][habitats_shortpath_red[0][xxx]-1] in (-111, -999):
                         
-                            occHABITATS[1][habitats_shortpath_red[0][xxx]-1] = x+1
+                            occHABITATS[1][habitats_shortpath_red[0][xxx]-1] = x+1 # TS of first population of H
 
-                        occHABITATS[2][habitats_shortpath_red[0][xxx]-1] = startHABITATS[xx]
+                        occHABITATS[2][habitats_shortpath_red[0][xxx]-1] = startHABITATS[xx] # H populated from which SH
                                     
-                        if occHABITATS[3][habitats_shortpath_red[0][xxx]-1] < (habitats_QUAL[occHABITATS[0][habitats_shortpath_red[0][xxx]-1]-1]*100).astype(int):        
+                        if occHABITATS[3][habitats_shortpath_red[0][xxx]-1] < (habitats_QUAL[occHABITATS[0][habitats_shortpath_red[0][xxx]-1]-1]*100).astype(int): # max pop size HQ * 100        
                                                                        
-                            occHABITATS[3][habitats_shortpath_red[0][xxx]-1] = occHABITATS[3][habitats_shortpath_red[0][xxx]-1] + (startHABITATS_HQ[xx]*25).astype(int)
+                            occHABITATS[3][habitats_shortpath_red[0][xxx]-1] = occHABITATS[3][habitats_shortpath_red[0][xxx]-1] + (startHABITATS_HQ[xx]*10).astype(int) # function to calculate number of individuals in H -> plus 10% of SH individuals 
 
                         startHABITATS, ind = np.unique(np.append(startHABITATS,[occHABITATS[0][habitats_shortpath_red[0][xxx]-1]]), return_index=True)
                         startHABITATS = startHABITATS[np.argsort(ind)]
@@ -233,13 +251,13 @@ for xxxx in range(100):
                            
                         if occHABITATS[1][habitats_shortpath_red[1][xxx]-1] in (-111, -999):
                                                     
-                            occHABITATS[1][habitats_shortpath_red[1][xxx]-1] = x+1
+                            occHABITATS[1][habitats_shortpath_red[1][xxx]-1] = x+1 # TS of first population of H
         
-                        occHABITATS[2][habitats_shortpath_red[1][xxx]-1] = startHABITATS[xx]
+                        occHABITATS[2][habitats_shortpath_red[1][xxx]-1] = startHABITATS[xx] # H populated from which SH
                         
-                        if occHABITATS[3][habitats_shortpath_red[1][xxx]-1] < (habitats_QUAL[occHABITATS[0][habitats_shortpath_red[1][xxx]-1]-1]*100).astype(int):        
+                        if occHABITATS[3][habitats_shortpath_red[1][xxx]-1] < (habitats_QUAL[occHABITATS[0][habitats_shortpath_red[1][xxx]-1]-1]*100).astype(int): # max pop size HQ * 100                
                             
-                            occHABITATS[3][habitats_shortpath_red[1][xxx]-1] = occHABITATS[3][habitats_shortpath_red[1][xxx]-1] + (startHABITATS_HQ[xx]*25).astype(int)
+                            occHABITATS[3][habitats_shortpath_red[1][xxx]-1] = occHABITATS[3][habitats_shortpath_red[1][xxx]-1] + (startHABITATS_HQ[xx]*10).astype(int)# function to calculate number of individuals in H -> plus 10% of SH individuals 
 
                         startHABITATS, ind = np.unique(np.append(startHABITATS,[occHABITATS[0][habitats_shortpath_red[1][xxx]-1]]), return_index=True)
                         startHABITATS = startHABITATS[np.argsort(ind)]
