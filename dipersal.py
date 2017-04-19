@@ -131,7 +131,7 @@ habitats_extent = cursor.fetchall()
 habitats_extent = re.findall(r"[\w']+", habitats_extent[0][0])[1:]
 habitats_extent = [float(i) for i in habitats_extent]
 
-cursor.execute("SELECT id, ST_AsText(geom)FROM demo_dispersal_pts;")
+cursor.execute("SELECT id, ST_AsText(geom) FROM demo_dispersal_pts;")
 xy_PTS = cursor.fetchall()
 xy_PTS = [[i[0],re.findall(r"[\w']+",i[1])[1:]] for i in xy_PTS]
 xy_PTS = [[i[0], float(i[1][0]), float(i[1][1])] for i in xy_PTS]
@@ -160,7 +160,7 @@ for xxxx in range(100):
         
     cursor.execute("ALTER TABLE dispresal100_SH2_pro2_todo ADD firstcol_"+str(xxxx+1)+"_timestep bigint, ADD origin_"+str(xxxx+1)+"_timestep bigint, ADD numindiv_"+str(xxxx+1)+"_timestep bigint;")
     
-    startHABITATS = np.random.choice(np.unique([habitats_shortpath_red[0], habitats_shortpath_red[1]]), 2).astype(int) # number of occupied habitats first run
+    startHABITATS = np.random.choice(np.unique([habitats_shortpath_red[0], habitats_shortpath_red[1]]), 5).astype(int) # number of occupied habitats first run
         
     print(startHABITATS)
         
@@ -181,6 +181,14 @@ for xxxx in range(100):
 #     plt.ylabel('Probability')
 #     plt.grid(True)
   
+    stressLEVEL = [0.025, 0.05, 0.075, 0.1] # intensity of stress events
+
+    percSTRESS_EVENTS = 0.05 # percentage of stress occurrences per timeSTEPS
+    
+    STRESS_EVENTS = np.random.choice(timeSTEPS, int(percSTRESS_EVENTS*timeSTEPS)) # random selection depending on percSTRESS_EVENTS
+    
+    spatialEVENT = habitats_extent # area where stress occurs - in this case: total area 
+
     for x in range(timeSTEPS):
         
         #startHABITATS = startHABITATS[np.where(occHABITATS[3][startHABITATS-1] >= 25)]
@@ -189,32 +197,41 @@ for xxxx in range(100):
         startHABITATS_IndNR = occHABITATS[3][startHABITATS-1] # number of individuals in startHABITATS
        
         #extPROB = np.random.choice(100,int(len(startHABITATS)*0.1)) # 0.1 resp. 10 % of startHABITATS may go extinct 
-
-        spatialEVENT = habitats_extent
              
-        extPROB = [i[0]  for i in xy_PTS if i[1] >= spatialEVENT[0] and i[1] <= spatialEVENT[2] and i[2] >= spatialEVENT[1] and i[2] <= spatialEVENT[3]]
-        
-        stressLEVEL = 0.05
-        
-        for xxxxx in range(len(extPROB)):
+        if x in STRESS_EVENTS:
+            
+            extPROB = [i[0]  for i in xy_PTS if i[1] >= spatialEVENT[0] and i[1] <= spatialEVENT[2] and i[2] >= spatialEVENT[1] and i[2] <= spatialEVENT[3]]
 
-            if extPROB[xxxxx] in startHABITATS:
-                                
-                ind = np.where(startHABITATS == extPROB[xxxxx])[0].tolist()  
-                                
-                redIndNR = np.log2(np.array(startHABITATS_IndNR[ind][0]))/6.75 # log2 function to include number of individuals in extinction prob
-                
-                yn = np.random.choice([0, 1], 1, p=[1-startHABITATS_HQ[ind][0]*redIndNR*stressLEVEL, startHABITATS_HQ[ind][0]*redIndNR*stressLEVEL])[0] # p extinction gets bigger when low HQ and small number of individuals in H
-                
-                if yn == 1: # extinction -> individuals set 0
-                
-                    startHABITATS = np.delete(startHABITATS, ind)
+            for xxxxx in range(len(extPROB)):
+    
+                if extPROB[xxxxx] in startHABITATS:
+                                    
+                    ind = np.where(startHABITATS == extPROB[xxxxx])[0].tolist()  
+                                    
+                    redIndNR = np.log10(np.array(startHABITATS_IndNR[ind][0])) # log10 function to include number of individuals in extinction prob
+                                    
+                    stressLEVEL_cH = np.random.choice(stressLEVEL) # 
                     
-                    occHABITATS[1][(extPROB[xxxxx]-1)] = -111
-                    occHABITATS[2][(extPROB[xxxxx]-1)] = -111
-                    occHABITATS[3][(extPROB[xxxxx]-1)] = 0
+                    if startHABITATS_HQ[ind][0] >= stressLEVEL_cH:
+                          
+                        STRESS = 1-(startHABITATS_HQ[ind][0]-stressLEVEL_cH)/startHABITATS_HQ[ind][0]
                     
-                    #print('DEATH ' + str(extPROB[xxxxx]))
+                    else:            
+                                
+                        STRESS = 1
+                           
+                    yn = np.random.choice([0, 1], 1, p=[1-STRESS*(1/redIndNR), STRESS*(1/redIndNR)])[0] # p extinction gets bigger when low HQ and small number of individuals in H
+                    
+                    
+                    if yn == 1: # extinction -> individuals set 0
+                    
+                        startHABITATS = np.delete(startHABITATS, ind)
+                        
+                        occHABITATS[1][(extPROB[xxxxx]-1)] = -111
+                        occHABITATS[2][(extPROB[xxxxx]-1)] = -111
+                        occHABITATS[3][(extPROB[xxxxx]-1)] = 0
+                        
+                        #print('DEATH ' + str(extPROB[xxxxx]))
                     
         startHABITATS = startHABITATS[np.where(occHABITATS[3][startHABITATS-1] >= 25)] # startHABITATS with less than 25 individuals are remove from startHABITATS 
            
@@ -279,6 +296,5 @@ print(end - start)
 cursor.close()
 conn.close()
 
-xxx
 
 
