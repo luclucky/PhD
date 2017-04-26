@@ -150,7 +150,7 @@ habitats_QUAL[np.where(habitats_QUAL < 0.25)] = 0.25 # min HQ set to 0.25
 #hqINS = str(np.array([range(100+1)[1:], habitats_QUAL]).T.tolist())[1:-1].replace('[','(').replace(']',')')
 #cursor.execute("INSERT INTO habitats_qual (pts_id, quality) VALUES "+hqINS+";") 
 
-cursor.execute("CREATE TABLE dispresal100_SH2_pro2_todo (pts_id bigint);")
+cursor.execute("CREATE TABLE dispresal100_test21052017 (pts_id bigint);")
 
 conn.commit()
 
@@ -158,13 +158,15 @@ for xxxx in range(100):
     
     print('run ' + str(xxxx))
         
-    cursor.execute("ALTER TABLE dispresal100_SH2_pro2_todo ADD firstcol_"+str(xxxx+1)+"_timestep bigint, ADD origin_"+str(xxxx+1)+"_timestep bigint, ADD numindiv_"+str(xxxx+1)+"_timestep bigint;")
+    cursor.execute("ALTER TABLE dispresal100_test21052017 ADD firstcol_"+str(xxxx+1)+"_timestep bigint, ADD origin_"+str(xxxx+1)+"_timestep bigint, ADD numindiv_"+str(xxxx+1)+"_timestep bigint;")
     
-    startHABITATS = np.random.choice(np.unique([habitats_shortpath_red[0], habitats_shortpath_red[1]]), 5).astype(int) # number of occupied habitats first run
+    startHABITATS = np.random.choice(np.unique([habitats_shortpath_red[0], habitats_shortpath_red[1]]), 25).astype(int) # number of occupied habitats first run
         
-    print(startHABITATS)
+#     print(startHABITATS)
         
     startHABITATS_HQ = habitats_QUAL[startHABITATS-1]
+
+    SH = startHABITATS
 
     occHABITATS = np.array([range(100+1)[1:], [-999] * 100, [-999] * 100, [0] * 100]) # 100: should be len(test_pts_shift)
                 
@@ -183,7 +185,7 @@ for xxxx in range(100):
   
     stressLEVEL = [0.025, 0.05, 0.075, 0.1] # intensity of stress events
 
-    percSTRESS_EVENTS = 0.05 # percentage of stress occurrences per timeSTEPS
+    percSTRESS_EVENTS = 0.0 # percentage of stress occurrences per timeSTEPS
     
     STRESS_EVENTS = np.random.choice(timeSTEPS, int(percSTRESS_EVENTS*timeSTEPS)) # random selection depending on percSTRESS_EVENTS
     
@@ -219,9 +221,13 @@ for xxxx in range(100):
                     else:            
                                 
                         STRESS = 1
-                           
-                    yn = np.random.choice([0, 1], 1, p=[1-STRESS*(1/redIndNR), STRESS*(1/redIndNR)])[0] # p extinction gets bigger when low HQ and small number of individuals in H
-                    
+                        
+                    if  redIndNR < 1:
+                        
+                        yn = 1
+                   
+                    else: 
+                        yn = np.random.choice([0, 1], 1, p=[1-STRESS*(1/redIndNR), STRESS*(1/redIndNR)])[0] # p extinction gets bigger when low HQ and small number of individuals in H
                     
                     if yn == 1: # extinction -> individuals set 0
                     
@@ -239,11 +245,47 @@ for xxxx in range(100):
 
             conHABITATS_ind = np.hstack(np.array([np.where(habitats_shortpath_red[0] == startHABITATS[xx])[0].tolist(), np.where(habitats_shortpath_red[1] == startHABITATS[xx])[0].tolist()]).flat).tolist()
         
-            if len(conHABITATS_ind) > 3:
+#              habitats_shortpath_red[0][conHABITATS_ind]
+#              habitats_shortpath_red[1][conHABITATS_ind]
+
+            for y in conHABITATS_ind:
                 
-                conHABITATS_ind = np.unique(np.random.choice(conHABITATS_ind, 3, p = (max(habitats_shortpath_red[2][conHABITATS_ind])-habitats_shortpath_red[2][conHABITATS_ind]) /sum(max(habitats_shortpath_red[2][conHABITATS_ind])-habitats_shortpath_red[2][conHABITATS_ind]))) # weighted p to select 3 H -> weighting accroding to costs 
-    
+                if habitats_shortpath_red[0][y] != startHABITATS[xx]:
+                
+                    if occHABITATS[3][habitats_shortpath_red[0][y]-1] >= int(habitats_QUAL[occHABITATS[0][habitats_shortpath_red[0][y]-1]-1]*100):
+                        
+                        conHABITATS_ind.remove(y)
+                
+                else:
+                    
+                    if occHABITATS[3][habitats_shortpath_red[1][y]-1] >= habitats_QUAL[occHABITATS[0][habitats_shortpath_red[1][y]-1]-1]*100:
+                        
+                        conHABITATS_ind.remove(y)   
+        
+#             if len(conHABITATS_ind) > 3:
+#                 
+#                 conHABITATS_ind = np.unique(np.random.choice(conHABITATS_ind, 3, p = (max(habitats_shortpath_red[2][conHABITATS_ind])-habitats_shortpath_red[2][conHABITATS_ind]) /sum(max(habitats_shortpath_red[2][conHABITATS_ind])-habitats_shortpath_red[2][conHABITATS_ind]))) # weighted p to select 3 H -> weighting accroding to costs 
+            
+            disIND = int(occHABITATS[3][startHABITATS[xx]-1]*0.25)
+            
+#             disIND_part = np.random.dirichlet(np.ones(len(conHABITATS_ind)),size=1)[0]          
+
+            costs_REVERSe = ((habitats_shortpath_red[2][conHABITATS_ind]-max(habitats_shortpath_red[2][conHABITATS_ind]))*-1+min(habitats_shortpath_red[2][conHABITATS_ind]))
+            
+#             disIND_part = costs_REVERSe/sum(costs_REVERSe)
+            disIND_part = np.round(costs_REVERSe**10/sum(costs_REVERSe**10),2)
+
             for xxx in conHABITATS_ind:
+                                
+                disIND_perCH = int(disIND * disIND_part[0])
+                
+                disIND_part = disIND_part[1:]
+                
+                if disIND_perCH == 0:
+                    continue
+                
+#                 else: 
+#                     print(disIND_perCH)
                 
                 yn = np.random.choice([1, 0], 1, p=[proB[xxx], 1-proB[xxx]])[0]
             
@@ -259,8 +301,9 @@ for xxxx in range(100):
                                     
                         if occHABITATS[3][habitats_shortpath_red[0][xxx]-1] < (habitats_QUAL[occHABITATS[0][habitats_shortpath_red[0][xxx]-1]-1]*100).astype(int): # max pop size HQ * 100        
                                                                        
-                            occHABITATS[3][habitats_shortpath_red[0][xxx]-1] = occHABITATS[3][habitats_shortpath_red[0][xxx]-1] + (startHABITATS_HQ[xx]*10).astype(int) # function to calculate number of individuals in H -> plus 10% of SH individuals 
-
+#                             occHABITATS[3][habitats_shortpath_red[0][xxx]-1] = occHABITATS[3][habitats_shortpath_red[0][xxx]-1] + (startHABITATS_HQ[xx]*10).astype(int) # function to calculate number of individuals in H -> plus 10% of SH individuals 
+                            occHABITATS[3][habitats_shortpath_red[0][xxx]-1] = occHABITATS[3][habitats_shortpath_red[0][xxx]-1] + disIND_perCH # function to calculate number of individuals in H -> plus 10% of SH individuals 
+                            
                         startHABITATS, ind = np.unique(np.append(startHABITATS,[occHABITATS[0][habitats_shortpath_red[0][xxx]-1]]), return_index=True)
                         startHABITATS = startHABITATS[np.argsort(ind)]
                         
@@ -274,18 +317,23 @@ for xxxx in range(100):
                         
                         if occHABITATS[3][habitats_shortpath_red[1][xxx]-1] < (habitats_QUAL[occHABITATS[0][habitats_shortpath_red[1][xxx]-1]-1]*100).astype(int): # max pop size HQ * 100                
                             
-                            occHABITATS[3][habitats_shortpath_red[1][xxx]-1] = occHABITATS[3][habitats_shortpath_red[1][xxx]-1] + (startHABITATS_HQ[xx]*10).astype(int)# function to calculate number of individuals in H -> plus 10% of SH individuals 
+#                             occHABITATS[3][habitats_shortpath_red[1][xxx]-1] = occHABITATS[3][habitats_shortpath_red[1][xxx]-1] + (startHABITATS_HQ[xx]*10).astype(int)# function to calculate number of individuals in H -> plus 10% of SH individuals 
+
+                            occHABITATS[3][habitats_shortpath_red[1][xxx]-1] = occHABITATS[3][habitats_shortpath_red[1][xxx]-1] + disIND_perCH# function to calculate number of individuals in H -> plus 10% of SH individuals 
 
                         startHABITATS, ind = np.unique(np.append(startHABITATS,[occHABITATS[0][habitats_shortpath_red[1][xxx]-1]]), return_index=True)
                         startHABITATS = startHABITATS[np.argsort(ind)]
-                
+    
+    np.where(occHABITATS[1]==-999)[0]+1
+    SH
+           
     toINS = str(np.array(occHABITATS).T.tolist())[1:-1].replace('[','(').replace(']',')')
     
     if xxxx == 0:
-        cursor.execute("INSERT INTO dispresal100_SH2_pro2_todo (pts_id, firstcol_"+str(xxxx+1)+"_timestep, origin_"+str(xxxx+1)+"_timestep, numindiv_"+str(xxxx+1)+"_timestep) VALUES "+toINS+";") 
+        cursor.execute("INSERT INTO dispresal100_test21052017 (pts_id, firstcol_"+str(xxxx+1)+"_timestep, origin_"+str(xxxx+1)+"_timestep, numindiv_"+str(xxxx+1)+"_timestep) VALUES "+toINS+";") 
 
     else:
-        cursor.execute("UPDATE dispresal100_SH2_pro2_todo SET firstcol_"+str(xxxx+1)+"_timestep = firstcol_"+str(xxxx+1)+"_timestep_arr, origin_"+str(xxxx+1)+"_timestep = origin_"+str(xxxx+1)+"_timestep_arr, numindiv_"+str(xxxx+1)+"_timestep = numindiv_"+str(xxxx+1)+"_timestep_arr FROM (VALUES "+toINS+") AS c(pts_id_arr, firstcol_"+str(xxxx+1)+"_timestep_arr, origin_"+str(xxxx+1)+"_timestep_arr, numindiv_"+str(xxxx+1)+"_timestep_arr) WHERE pts_id = pts_id_arr;") 
+        cursor.execute("UPDATE dispresal100_test21052017 SET firstcol_"+str(xxxx+1)+"_timestep = firstcol_"+str(xxxx+1)+"_timestep_arr, origin_"+str(xxxx+1)+"_timestep = origin_"+str(xxxx+1)+"_timestep_arr, numindiv_"+str(xxxx+1)+"_timestep = numindiv_"+str(xxxx+1)+"_timestep_arr FROM (VALUES "+toINS+") AS c(pts_id_arr, firstcol_"+str(xxxx+1)+"_timestep_arr, origin_"+str(xxxx+1)+"_timestep_arr, numindiv_"+str(xxxx+1)+"_timestep_arr) WHERE pts_id = pts_id_arr;") 
 
 conn.commit()
 
