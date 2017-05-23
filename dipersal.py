@@ -149,10 +149,10 @@ habitats_QUAL = np.load('/home/lucas/PhD/STRESSOR/TEST_DATA/habitatsQuality.npy'
 habitats_QUAL[np.where(habitats_QUAL < 0.25)] = 0.25 # min HQ set to 0.25
 
 #cursor.execute("CREATE TABLE habitats_qual (pts_id bigint, quality float);")
-#hqINS = str(np.array([range(100+1)[1:], habitats_QUAL]).T.tolist())[1:-1].replace('[','(').replace(']',')')
+hqINS = str(np.array([range(100+1)[1:], habitats_QUAL]).T.tolist())[1:-1].replace('[','(').replace(']',')')
 #cursor.execute("INSERT INTO habitats_qual (pts_id, quality) VALUES "+hqINS+";") 
 
-cursor.execute("CREATE TABLE dispresal100_end_2 (pts_id bigint);")
+cursor.execute("CREATE TABLE dispresal100_end_5 (pts_id bigint);")
 
 conn.commit()
 
@@ -160,11 +160,11 @@ for xxxx in range(100):
     
     print('run ' + str(xxxx))
         
-    cursor.execute("ALTER TABLE dispresal100_end_2 ADD firstcol_"+str(xxxx+1)+"_timestep bigint, ADD origin_"+str(xxxx+1)+"_timestep bigint, ADD numindiv_"+str(xxxx+1)+"_timestep bigint, ADD first25_"+str(xxxx+1)+"_timestep bigint;")
+    cursor.execute("ALTER TABLE dispresal100_end_5 ADD firstcol_"+str(xxxx+1)+"_timestep bigint, ADD origin_"+str(xxxx+1)+"_timestep bigint, ADD numindiv_"+str(xxxx+1)+"_timestep bigint, ADD first25_"+str(xxxx+1)+"_timestep bigint;")
     
-#     startHABITATS = np.random.choice(np.unique([habitats_shortpath_red[0], habitats_shortpath_red[1]]), 25).astype(int) # number of occupied habitats first run
+    startHABITATS = np.random.choice(np.unique([habitats_shortpath_red[0], habitats_shortpath_red[1]]), 2).astype(int) # number of occupied habitats first run
      
-    startHABITATS = np.array([1,2,3,4,7,8,9,10,12,14,15,16,17,18,20,21,22,23,25,26,27,28,29,30,31,32,34,35,37,42,43,45,46,49,50,51,54,56,57,58,59,61,62,63,64,66,68,69,70,71,72,73,74,75,76,79,80,82,84,85,86,87,88,89,90,91,92,93,99,100])
+#     startHABITATS = np.array([7,90,99,3,52,94,24,78,62,57,89,67,11,44,38,45,96,60,55,13,47,77,33,98])
        
 #     print(startHABITATS)
 
@@ -299,6 +299,12 @@ for xxxx in range(100):
 #             disIND_part = costs_REVERSe/sum(costs_REVERSe)
             disIND_part = np.round(costs_REVERSe**10/sum(costs_REVERSe**10),1)
 
+            plt.plot( range(101)[1:], np.log10(range(101)[1:]))
+            plt.xlabel('# of Individuals')
+            plt.ylabel('VAR: redIndNR')
+            plt.grid(True)
+
+
             for xxx in conHABITATS_ind:
                                 
                 disIND_perCH = int(disIND * disIND_part[0])
@@ -359,10 +365,10 @@ for xxxx in range(100):
     toINS = str(np.array(occHABITATS).T.tolist())[1:-1].replace('[','(').replace(']',')')
     
     if xxxx == 0:
-        cursor.execute("INSERT INTO dispresal100_end_2 (pts_id, firstcol_"+str(xxxx+1)+"_timestep, origin_"+str(xxxx+1)+"_timestep, numindiv_"+str(xxxx+1)+"_timestep, first25_"+str(xxxx+1)+"_timestep) VALUES "+toINS+";") 
+        cursor.execute("INSERT INTO dispresal100_end_5 (pts_id, firstcol_"+str(xxxx+1)+"_timestep, origin_"+str(xxxx+1)+"_timestep, numindiv_"+str(xxxx+1)+"_timestep, first25_"+str(xxxx+1)+"_timestep) VALUES "+toINS+";") 
 
     else:
-        cursor.execute("UPDATE dispresal100_end_2 SET firstcol_"+str(xxxx+1)+"_timestep = firstcol_"+str(xxxx+1)+"_timestep_arr, origin_"+str(xxxx+1)+"_timestep = origin_"+str(xxxx+1)+"_timestep_arr, numindiv_"+str(xxxx+1)+"_timestep = numindiv_"+str(xxxx+1)+"_timestep_arr, first25_"+str(xxxx+1)+"_timestep = first25_"+str(xxxx+1)+"_timestep_arr FROM (VALUES "+toINS+") AS c(pts_id_arr, firstcol_"+str(xxxx+1)+"_timestep_arr, origin_"+str(xxxx+1)+"_timestep_arr, numindiv_"+str(xxxx+1)+"_timestep_arr, first25_"+str(xxxx+1)+"_timestep_arr) WHERE pts_id = pts_id_arr;") 
+        cursor.execute("UPDATE dispresal100_end_5 SET firstcol_"+str(xxxx+1)+"_timestep = firstcol_"+str(xxxx+1)+"_timestep_arr, origin_"+str(xxxx+1)+"_timestep = origin_"+str(xxxx+1)+"_timestep_arr, numindiv_"+str(xxxx+1)+"_timestep = numindiv_"+str(xxxx+1)+"_timestep_arr, first25_"+str(xxxx+1)+"_timestep = first25_"+str(xxxx+1)+"_timestep_arr FROM (VALUES "+toINS+") AS c(pts_id_arr, firstcol_"+str(xxxx+1)+"_timestep_arr, origin_"+str(xxxx+1)+"_timestep_arr, numindiv_"+str(xxxx+1)+"_timestep_arr, first25_"+str(xxxx+1)+"_timestep_arr) WHERE pts_id = pts_id_arr;") 
 
 conn.commit()
 
@@ -374,4 +380,4 @@ cursor.close()
 conn.close()
 
 
-
+test
