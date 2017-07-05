@@ -299,10 +299,10 @@ for xxxx in range(100):
 #             disIND_part = costs_REVERSe/sum(costs_REVERSe)
             disIND_part = np.round(costs_REVERSe**10/sum(costs_REVERSe**10),1)
 
-            plt.plot( range(101)[1:], np.log10(range(101)[1:]))
-            plt.xlabel('# of Individuals')
-            plt.ylabel('VAR: redIndNR')
-            plt.grid(True)
+#             plt.plot( range(101)[1:], np.log10(range(101)[1:]))
+#             plt.xlabel('# of Individuals')
+#             plt.ylabel('VAR: redIndNR')
+#             plt.grid(True)
 
 
             for xxx in conHABITATS_ind:
@@ -379,5 +379,43 @@ print(end - start)
 cursor.close()
 conn.close()
 
+# ex32.py
+from __future__ import print_function, division
+import numpy as np
+import matplotlib.pyplot as plt
 
-test
+# Verhulst logistic growth
+
+r = 10 # growth rate / yr
+K = 100 # carrying capacity
+t = 100 # number of years
+num = np.zeros(t+1)
+num[0] = 1
+
+for i in range(t):
+    num[i+1] = num[i]+r*num[i]*(1-num[i]/K)
+    
+plt.plot(range(t+1),num, 'b')
+plt.xlabel('Year')
+plt.ylabel('Number')
+plt.title('Growth rate: 0.25, Carrying Capacity = 100')
+plt.axvline(np.argmax(np.diff(num)),  color = 'k'  )
+plt.show()
+
+theta=0.5
+num0=1
+r=.25
+K=100
+t = 100
+
+numTL = np.zeros(t+1)
+numTL[0] = 1
+
+for i in range(t):
+## closed-form solution for theta-logistic
+    numTL[i+1] = (K**(-theta)+(num0**(-theta)-K**(-theta))*np.exp(-r*theta*i))**(-1/theta)
+
+plt.plot(range(t+1),numTL, 'b')
+
+
+## th
