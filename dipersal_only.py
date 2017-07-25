@@ -86,7 +86,8 @@ for xxxx in range(100):
     area_event = habitats_extent # area where stress occurs - in this case: total area 
 
     theta = 0.5
-    igr = 10
+    igr = 2
+    t  = 10
     
     growthfunc = 'tlg'
          
@@ -111,6 +112,14 @@ for xxxx in range(100):
             c = ((starthabitats_hq*100) * np.sqrt(starthabitats_indnr) - starthabitats_indnr * np.sqrt(starthabitats_hq*100)) / ((starthabitats_hq*100) * starthabitats_indnr)
         
             starthabitats_indnr = (starthabitats_hq*100) / (1 + np.exp(-theta * igr_rand) * c * np.sqrt(starthabitats_hq*100))**2
+
+
+
+        if growthfunc == 'lg_ae':
+            
+            starthabitats_indnr = starthabitats_indnr + igr_rand*starthabitats_indnr*(1-starthabitats_indnr/(starthabitats_hq*100))*(starthabitats_indnr/t-1)
+
+
 
         occhabitats[3][starthabitats-1] = starthabitats_indnr
 
