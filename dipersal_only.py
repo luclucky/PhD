@@ -21,6 +21,30 @@ import re
 import warnings
 warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) 
 
+def logGRO(K, N, r, t):
+    
+    Nt = (K * N) / (N + (K - N) * np.exp(-r*t)) 
+    return Nt
+
+def logGRO_T(T, N, r, t):
+
+    Nt = (T * N) / (N + (T - N) * np.exp(r*t))
+    return Nt
+
+def THETAlogGRO(K, N, r, t):
+
+    C = (K * np.sqrt(N) - N * np.sqrt(K)) / (K * N)
+    Nt = K / (1 + np.exp(-theta * r * t) * C * np.sqrt(K))**2
+    return Nt
+
+def THETAlogGRO_T(T, N, r, t):
+    
+    C = (T * np.sqrt(N) - N * np.sqrt(T)) / (T * N)
+    Nt = T / (1 + np.exp(-theta * -r * t) * C * np.sqrt(T))**2
+    return Nt
+
+#####
+
 conn = psycopg2.connect("host=localhost port=5432 dbname=DB_PhD user=lucas password=1gis!gis1")
 cursor = conn.cursor()
 
@@ -41,8 +65,8 @@ cursor.execute("select start, aim, costs from habitats_shortpath_red;")
 habitats_shortpath_red = cursor.fetchall()
 habitats_shortpath_red = np.array(habitats_shortpath_red).T
 
-habitats_QUAL = np.load('/home/lucas/PhD/STRESSOR/TEST_DATA/habitatsQuality.npy')
-habitats_QUAL[np.where(habitats_QUAL < 0.25)] = 0.25 # min HQ set to 0.25
+habitats_qual = np.load('/home/lucas/PhD/STRESSOR/TEST_DATA/habitatsQuality.npy')
+habitats_qual[np.where(habitats_qual < 0.25)] = 0.25 # min HQ set to 0.25
 
 cursor.execute("create table testtab_07062017 (pts_id bigint);")
 
@@ -52,7 +76,7 @@ for xxxx in range(100):
     
     print('run ' + str(xxxx))
         
-    cursor.execute("alter table testtab_07062017 add firstcol_"+str(xxxx+1)+"_timestep bigint, add origin_"+str(xxxx+1)+"_timestep bigint, add numindiv_"+str(xxxx+1)+"_timestep float, add first25_"+str(xxxx+1)+"_timestep bigint;")
+#     cursor.execute("alter table testtab_07062017 add firstcol_"+str(xxxx+1)+"_timestep bigint, add origin_"+str(xxxx+1)+"_timestep bigint, add numindiv_"+str(xxxx+1)+"_timestep float, add first25_"+str(xxxx+1)+"_timestep bigint;")
     
     starthabitats = np.random.choice(np.unique([habitats_shortpath_red[0], habitats_shortpath_red[1]]), 2).astype(int) # number of occupied habitats first run
      
@@ -87,7 +111,8 @@ for xxxx in range(100):
 
     theta = 0.5
     igr = 2
-    t  = 10
+    t  = 1
+    TH = 5
     
     growthfunc = 'tlg'
          
@@ -103,24 +128,26 @@ for xxxx in range(100):
         starthabitats_hq = habitats_QUAL[starthabitats-1] # habitat-quality of starthabitats
         starthabitats_indnr = occhabitats[3][starthabitats-1] # number of individuals in starthabitats
 
-        if growthfunc == 'lg': 
-      
-            starthabitats_indnr = starthabitats_indnr+igr_rand*starthabitats_indnr*(1-starthabitats_indnr/(starthabitats_hq*100))
-
-        if growthfunc == 'tlg': 
+        if growthfunc == 'logGRO': 
             
-            c = ((starthabitats_hq*100) * np.sqrt(starthabitats_indnr) - starthabitats_indnr * np.sqrt(starthabitats_hq*100)) / ((starthabitats_hq*100) * starthabitats_indnr)
-        
-            starthabitats_indnr = (starthabitats_hq*100) / (1 + np.exp(-theta * igr_rand) * c * np.sqrt(starthabitats_hq*100))**2
+            starthabitats_indnr = logGRO(K = starthabitats_hq*100, N = starthabitats_indnr, r = igr_rand, t = 1)
 
-
-
-        if growthfunc == 'lg_ae':
+        if growthfunc == 'logGRO_T': 
             
-            starthabitats_indnr = starthabitats_indnr + igr_rand*starthabitats_indnr*(1-starthabitats_indnr/(starthabitats_hq*100))*(starthabitats_indnr/t-1)
+            starthabitats_indnr[np.where(starthabitats_indnr > TH)] = logGRO(K = starthabitats_hq[np.where(starthabitats_indnr > TH)]*100, N = starthabitats_indnr[np.where(starthabitats_indnr > TH)], r = igr_rand, t = 1)
 
+            starthabitats_indnr[np.where(starthabitats_indnr <= TH)] = logGRO_T(T = TH, N = starthabitats_indnr[np.where(starthabitats_indnr <= 10)], r = igr_rand, t = 1)
+            
+        if growthfunc == 'THETAlogGRO': 
+            
+            starthabitats_indnr = THETAlogGRO(K = starthabitats_hq*100, N = starthabitats_indnr, r = igr_rand, t = 1)
 
+        if growthfunc == 'THETAlogGRO_T': 
+            
+            starthabitats_indnr[np.where(starthabitats_indnr > TH)] = THETAlogGRO(K = starthabitats_hq[np.where(starthabitats_indnr > TH)]*100, N = starthabitats_indnr[np.where(starthabitats_indnr > TH)], r = igr_rand, t = 1)
 
+            starthabitats_indnr[np.where(starthabitats_indnr <= TH)] = THETAlogGRO_T(T = TH, N = starthabitats_indnr[np.where(starthabitats_indnr <= 10)], r = igr_rand, t = 1)
+            
         occhabitats[3][starthabitats-1] = starthabitats_indnr
 
         if x in stress_events:
@@ -144,30 +171,7 @@ for xxxx in range(100):
                         redindnr = round(np.array(starthabitats_indnr[ind][0])**2/10**5.0, 3) # exp function to include number of individuals in extinction prob
                     
                         yn = np.random.choice([1, 0], 1, p=[stress - round(stress*redindnr,3), 1.0 - (stress - round(stress*redindnr,3))])[0] # p extinction gets bigger when low hq and small number of individuals in h
- 
-                    plt.plot( range(101)[1:], np.log10(range(101)[1:])/20)
-                    plt.xlabel('# of Individuals')
-                    plt.ylabel('VAR: redIndNR')
-                    plt.grid(True)
- 
-                    plt.ylim([0.5,1])
-                    plt.plot(range(101)[1:], np.full((100), 0.75) - (np.full((100), 0.75)  *(np.log10(range(101)[1:])/20)))
-                    plt.xlabel('# Individuals')
-                    plt.ylabel('Stress 0.75: Extinction Probability')
-                    plt.grid(True)
- 
- 
-                    plt.plot( range(101)[1:], np.array(range(101)[1:])**2/10**5.0)
-                    plt.xlabel('# of Individuals')
-                    plt.ylabel('VAR: redIndNR')
-                    plt.grid(True)
-                     
-                    plt.ylim([0.5,1])
-                    plt.plot(range(101)[1:], np.full((100), 0.75) - (np.full((100), 0.75)  *(np.array(range(101)[1:])**2/10**5.0)))
-                    plt.xlabel('Individuals')
-                    plt.ylabel('Stress 0.75: Extinction Probability')
-                    plt.grid(True)
-                                       
+                          
                     if yn == 1: # extinction -> individuals set 0
                     
                         starthabitats = np.delete(starthabitats, ind)
@@ -228,7 +232,7 @@ for xxxx in range(100):
             
 #             disind_part = costs_reverse/sum(costs_reverse)
 
-            disind_part = np.round(costs_reverse**10/sum(costs_reverse**10),1)
+            disind_part = np.round(costs_reverse**10/sum(costs_reverse**10),2)
 
 #             plt.plot( range(101)[1:], np.log10(range(101)[1:]))
 #             plt.xlabel('# of individuals')
@@ -269,7 +273,7 @@ for xxxx in range(100):
                         if  occhabitats[4][habitats_shortpath_red[0][xxx]-1] in (-111, -999) and occhabitats[3][habitats_shortpath_red[0][xxx]-1] >= 25.0:
                             occhabitats[4][habitats_shortpath_red[0][xxx]-1] = x+1
                             
-                        starthabitats, ind = np.unique(np.append(starthabitats,[occhabitats[0][habitats_shortpath_red[0][xxx]-1]]), return_index=true)
+                        starthabitats, ind = np.unique(np.append(starthabitats,[occhabitats[0][habitats_shortpath_red[0][xxx]-1]]), return_index=True)
                         starthabitats = starthabitats[np.argsort(ind)].astype(int)
                         
                     if occhabitats[0][habitats_shortpath_red[1][xxx]-1] != starthabitats[xx]:
@@ -289,10 +293,10 @@ for xxxx in range(100):
                         if  occhabitats[4][habitats_shortpath_red[1][xxx]-1] in (-111, -999) and occhabitats[3][habitats_shortpath_red[1][xxx]-1] >= 25:
                             occhabitats[4][habitats_shortpath_red[1][xxx]-1] = x+1
                             
-                        starthabitats, ind = np.unique(np.append(starthabitats,[occhabitats[0][habitats_shortpath_red[1][xxx]-1]]), return_index=true)
+                        starthabitats, ind = np.unique(np.append(starthabitats,[occhabitats[0][habitats_shortpath_red[1][xxx]-1]]), return_index=True)
                         starthabitats = starthabitats[np.argsort(ind)].astype(int)
            
-    toins = str(np.array(occhabitats).t.tolist())[1:-1].replace('[','(').replace(']',')')
+    toins = str(np.array(occhabitats).T.tolist())[1:-1].replace('[','(').replace(']',')')
     
     if xxxx == 0:
         cursor.execute("insert into testtab_07062017 (pts_id, firstcol_"+str(xxxx+1)+"_timestep, origin_"+str(xxxx+1)+"_timestep, numindiv_"+str(xxxx+1)+"_timestep, first25_"+str(xxxx+1)+"_timestep) values "+toins+";") 

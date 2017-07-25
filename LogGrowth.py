@@ -144,13 +144,9 @@ Nt_T = (T * N) / (N + (T - N) * np.exp(r*t))
 
 
 C = (K * np.sqrt(N) - N * np.sqrt(K)) / (K * N)
-    
 Nt_tet = K / (1 + np.exp(-theta * r * t) * C * np.sqrt(K))**2
 
-
-
 C = (T * np.sqrt(N) - N * np.sqrt(T)) / (T * N)
-    
 Nt_Ttet = T / (1 + np.exp(-theta * -r * t) * C * np.sqrt(T))**2
 
 
