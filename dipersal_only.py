@@ -9,7 +9,8 @@ created on 2 feb 2017
 import numpy as np
 import gdal, ogr, os, osr
 import random
-        
+import scipy 
+
 import psycopg2
 import math
 
