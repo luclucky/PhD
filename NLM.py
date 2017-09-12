@@ -72,7 +72,7 @@ conn.close()
 #np.random.seed(0) # to produce same NLMs
 
 nlm1 = nlmpy.randomElementNN(int(nROW), int(nCOL), 1000)
-nlm1 = ((nlmpy.classifyArray(nlm1, [6,1,2]) + 1) * 25) + 25
+nlm1 = ((nlmpy.classifyArray(nlm1, [.666,.111,.222]) + 1) * 25) + 25
 
 np.unique(nlm1)
 np.sum(nlm1 == 50)/(nROW * nCOL)
@@ -80,7 +80,7 @@ np.sum(nlm1 == 75)/(nROW * nCOL)
 np.sum(nlm1 == 100)/(nROW * nCOL)
 
 nlm2 = nlmpy.randomElementNN(int(nROW), int(nCOL), 500)
-nlm2 = ((nlmpy.classifyArray(nlm2, [8,6,1]) + 1) * 25) + 25
+nlm2 = ((nlmpy.classifyArray(nlm2, [.5,.4,.1]) + 1) * 25) + 25
 
 np.unique(nlm2)
 np.sum(nlm2 == 50)/(nROW * nCOL)
