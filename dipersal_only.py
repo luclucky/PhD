@@ -130,8 +130,8 @@ cursor = conn.cursor()
 start = time.time()
 
 cursor.execute("select st_extent(geom) from demo_dispersal_pts;")
-habitats_extent = cursor.fetchall()
-habitats_extent = re.findall(r"[\w']+", habitats_extent[0][0])[1:]
+habitats_extent = cursor.fetchone()
+habitats_extent = re.findall(r"[\w.]+", habitats_extent[0])[1:]
 habitats_extent = [float(i) for i in habitats_extent]
 
 cursor.execute("select id, st_astext(geom) from demo_dispersal_pts;")

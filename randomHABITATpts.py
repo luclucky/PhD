@@ -23,11 +23,11 @@ warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
 conn = psycopg2.connect("host=localhost port=5432 dbname=DB_PhD user=lucas password=1gis!gis1")
 cursor = conn.cursor()
 
-cursor.execute("""SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'""")
+# cursor.execute("""SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'""")
+# 
+# tables = cursor.fetchall()
 
-tables = cursor.fetchall()
-
-cursor.execute("SELECT ids, xy_coord FROM public.pts_habitat_triersaar_shift;")
+cursor.execute("SELECT ids, ST_AsText(geom) FROM stream_network.pts_habitat_red_50x50;")
 
 randHAPTS =  cursor.fetchall()
 
@@ -45,7 +45,30 @@ def randomSAMPLE(randHAPTS_IDS, maxHABs):
     random_SAMPLE = random.sample(randHAPTS_IDS, maxHABs)
     return(random_SAMPLE)
 
-randomSAMPLE(randHAPTS_IDS, 500)
+numRandPTs = 10
+
+for x in range(numRandPTs):
+    
+    print(x)
+
+    PTs_rSa = randomSAMPLE(randHAPTS_IDS, int(len(randHAPTS_IDS)*0.1+0.5))
+
+    cursor.execute("""CREATE TABLE stream_network.pts_habitat_red_50x50_start_"""+str(x)+""" AS SELECT * FROM stream_network.pts_habitat_red_50x50 WHERE ids IN ("""+str(PTs_rSa)[1:-1]+""");""")
+    
+    conn.commit()
+    
+    cursor.execute("""SELECT ids FROM stream_network.pts_habitat_red_50x50_start_"""+str(x)+""";""")
+
+    ids = cursor.fetchall()
+    ids = [int(i[0]) for i in ids]
+    
+    cursor.execute("""CREATE TABLE stream_network.dist_pts_2500_50x50_start_"""+str(x)+""" AS SELECT * FROM stream_network.dist_pts_2500_50x50 WHERE start IN ("""+str(ids)[1:-1]+""") AND aim IN ("""+str(ids)[1:-1]+""");""")
+
+    conn.commit()
+
+cursor.close()
+conn.close()
+
 
 #####
 
