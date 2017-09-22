@@ -27,7 +27,7 @@ cursor = conn.cursor()
 # 
 # tables = cursor.fetchall()
 
-cursor.execute("SELECT ids, ST_AsText(geom) FROM stream_network.pts_habitat_red_50x50;")
+cursor.execute("SELECT ids, ST_AsText(geom) FROM stream_network.pts_habitat_red_30x30;")
 
 randHAPTS =  cursor.fetchall()
 
@@ -50,19 +50,25 @@ numRandPTs = 10
 for x in range(numRandPTs):
     
     print(x)
-
+ 
     PTs_rSa = randomSAMPLE(randHAPTS_IDS, int(len(randHAPTS_IDS)*0.1+0.5))
-
-    cursor.execute("""CREATE TABLE stream_network.pts_habitat_red_50x50_start_"""+str(x)+""" AS SELECT * FROM stream_network.pts_habitat_red_50x50 WHERE ids IN ("""+str(PTs_rSa)[1:-1]+""");""")
+  
+    cursor.execute("""CREATE TABLE stream_network.pts_habitat_red_50x50_start_"""+str(x)+""" AS SELECT * FROM stream_network.pts_habitat_red_30x30 WHERE ids IN ("""+str(PTs_rSa)[1:-1]+""");""")
     
+    cursor.execute("""ALTER TABLE stream_network.pts_habitat_red_50x50_start_"""+str(x)+""" RENAME COLUMN ids TO ids_org;""")
+    
+    cursor.execute("""ALTER TABLE stream_network.pts_habitat_red_50x50_start_"""+str(x)+""" ADD column ids bigserial;""")
+
     conn.commit()
-    
+      
     cursor.execute("""SELECT ids FROM stream_network.pts_habitat_red_50x50_start_"""+str(x)+""";""")
-
+ 
     ids = cursor.fetchall()
     ids = [int(i[0]) for i in ids]
-    
-    cursor.execute("""CREATE TABLE stream_network.dist_pts_2500_50x50_start_"""+str(x)+""" AS SELECT * FROM stream_network.dist_pts_2500_50x50 WHERE start IN ("""+str(ids)[1:-1]+""") AND aim IN ("""+str(ids)[1:-1]+""");""")
+     
+    print(len(ids))
+     
+    cursor.execute("""CREATE TABLE stream_network.dist_pts_2500_50x50_start_"""+str(x)+""" AS SELECT * FROM stream_network.dist_pts_2500_30x30 WHERE start IN ("""+str(ids)[1:-1]+""") AND aim IN ("""+str(ids)[1:-1]+""");""")
 
     conn.commit()
 

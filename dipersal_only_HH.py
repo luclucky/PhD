@@ -7,8 +7,6 @@ created on 2 feb 2017
 #from randshortpath import randshortpath as rsp
 
 import numpy as np
-np.set_printoptions(suppress=True)
-
 import gdal, ogr, os, osr
 import random
 import scipy 
@@ -133,39 +131,40 @@ cursor = conn.cursor()
 
 start = time.time()
 
-cursor.execute("SELECT st_extent(geom) FROM demo_dispersal_pts;")
+cursor.execute("SELECT st_extent(geom) FROM stream_network.pts_habitat_red_10x10_start_0;")
 habitats_extent = cursor.fetchone()
 habitats_extent = re.findall(r"[\w.]+", habitats_extent[0])[1:]
 habitats_extent = [float(i) for i in habitats_extent]
 
-cursor.execute("SELECT id, st_astext(geom) FROM demo_dispersal_pts;")
+cursor.execute("SELECT idS, st_astext(geom) FROM stream_network.pts_habitat_red_10x10_start_0;")
 xy_pts = cursor.fetchall()
 xy_pts = [[i[0],re.findall(r"[\w']+",i[1])[1:]] for i in xy_pts]
 xy_pts = [[i[0], float(i[1][0]), float(i[1][1])] for i in xy_pts]
 xy_pts.sort()
 
-cursor.execute("SELECT rid, ST_MetaData(rast) AS md FROM costraster_triersaar;")
+cursor.execute("SELECT rid, ST_MetaData(rast) AS md FROM stream_network.rlp_stream_rast_testarea_10x10;")
 raster_MD = cursor.fetchall()
 raster_MD = [float(x) for x in raster_MD[0][1][1:-1].split(',')]
 
-cursor.execute("SELECT start, aim, costs FROM habitats_shortpath_red;")
+cursor.execute("SELECT start, aim, costs FROM stream_network.habitats_shortpath_red_nlmrc_testarea_10x10_0_start_0_resamp;")
 habitats_shortpath_red = cursor.fetchall()
 habitats_shortpath_red = np.array(habitats_shortpath_red).T
 
-habitats_qual = np.load('/home/lucas/PhD/STRESSOR/TEST_DATA/habitatsQuality.npy')
+habitats_qual = np.random.random_sample((len(xy_pts),))  # creates ramdom HQs
+
+# habitats_qual = np.load('/home/lucas/PhD/STRESSOR/TEST_DATA/habitatsQuality.npy')
 habitats_qual[np.where(habitats_qual < 0.25)] = 0.25 # min HQ set to 0.25
 
-cursor.execute("""DROP TABLE IF EXISTS results.thetalog_22092017;""")
-
-cursor.execute("CREATE TABLE results.thetalog_22092017 (pts_id bigint);")
+cursor.execute("""DROP TABLE IF EXISTS results.HH_20092017;""")
+cursor.execute("CREATE table results.HH_20092017 (pts_id bigint);")
 
 conn.commit()
 
-for xxxx in range(10):
+for xxxx in range(100):
     
     print('run ' + str(xxxx))
         
-    cursor.execute("alter table results.thetalog_22092017 add firstcol_"+str(xxxx+1)+"_timestep bigint, add origin_"+str(xxxx+1)+"_timestep bigint, add biomass_"+str(xxxx+1)+"_timestep float, add first25_"+str(xxxx+1)+"_timestep bigint;")
+    cursor.execute("alter table results.HH_20092017 add firstcol_"+str(xxxx+1)+"_timestep bigint, add origin_"+str(xxxx+1)+"_timestep bigint, add indiv_"+str(xxxx+1)+"_timestep float, add first25_"+str(xxxx+1)+"_timestep bigint;")
     
     starthabitats = np.random.choice(np.unique([habitats_shortpath_red[0], habitats_shortpath_red[1]]), 10).astype(int) # number of occupied habitats first run
         
@@ -178,7 +177,7 @@ for xxxx in range(10):
     occhabitats[3][(starthabitats-1).tolist()] = starthabitats_hq * 100.0
     occhabitats[4][(starthabitats-1).tolist()] = 0
 
-    prob = PROBreachCONHABITAT(Co = habitats_shortpath_red[2], maxCo = 1000)
+    prob = PROBreachCONHABITAT(Co = habitats_shortpath_red[2], maxCo = 1500)
 
     timesteps = 100
 
@@ -192,12 +191,13 @@ for xxxx in range(10):
     
     area_event = habitats_extent # area where stress occurs - in this case: total area 
     
-    growthfunc = 'THETAlogGRO_T'    
+    growthfunc = 'logGRO'    
     theta = 0.5
     igr = 2.0
     t  = 1.0
-    TH = 2.0
-         
+    
+    TH = 20
+    
     m_max = 0.20
     s = 0.5
     
@@ -207,63 +207,19 @@ for xxxx in range(10):
                 
         if len(occhabitats[0][np.where(occhabitats[3] > 0.0)].astype(int)) == 0:
             break
-        
-#         randomEXT(extPROB_perRUN, occhabitats)
-        
+                
         starthabitats = occhabitats[0][np.where(occhabitats[3] > 0.0)].astype(int)
 
-#         igr_rand = igr + igr*random.uniform(-0.25, 0.25) 
-        igr_rand = igr 
+        igr_rand = igr + igr*random.uniform(-0.25, 0.25) 
 
         starthabitats_hq = habitats_qual[starthabitats-1] # habitat-quality of starthabitats
         starthabitats_indnr = occhabitats[3][starthabitats-1] # number of individuals in starthabitats
 
-        if growthfunc == 'logGRO': 
-            
-            starthabitats_indnr = logGRO(K = starthabitats_hq*100, N = starthabitats_indnr, r = igr_rand, t = 1)
+        # logGRO from TH = 20 IND up
 
-        if growthfunc == 'logGRO_T': 
-            
-            starthabitats_indnr[np.where(starthabitats_indnr > TH)] = logGRO(K = starthabitats_hq[np.where(starthabitats_indnr > TH)]*100, N = starthabitats_indnr[np.where(starthabitats_indnr > TH)], r = igr_rand, t = 1)
-
-            starthabitats_indnr[np.where(starthabitats_indnr <= TH)] = logGRO_T(T = TH, N = starthabitats_indnr[np.where(starthabitats_indnr <= TH)], r = igr_rand, t = 1)
-            
-        if growthfunc == 'THETAlogGRO': 
-            
-            starthabitats_indnr = THETAlogGRO(K = starthabitats_hq*100, N = starthabitats_indnr, r = igr_rand, t = 1)
-
-        if growthfunc == 'THETAlogGRO_T': 
-            
-            starthabitats_indnr[np.where(starthabitats_indnr > TH)] = THETAlogGRO(K = starthabitats_hq[np.where(starthabitats_indnr > TH)]*100, N = starthabitats_indnr[np.where(starthabitats_indnr > TH)], r = igr_rand, t = 1)
-
-            starthabitats_indnr[np.where(starthabitats_indnr <= TH)] = THETAlogGRO_T(T = TH, N = starthabitats_indnr[np.where(starthabitats_indnr <= TH)], r = igr_rand, t = 1)
+        starthabitats_indnr[np.where(starthabitats_indnr > TH)] = logGRO(K = starthabitats_hq[np.where(starthabitats_indnr > TH)]*100, N = starthabitats_indnr[np.where(starthabitats_indnr > TH)], r = igr_rand, t = 1)
             
         occhabitats[3][starthabitats-1] = np.round(starthabitats_indnr, 3)
-
-        if x in stress_events:
-            
-            extprob = [i[0]  for i in xy_pts if i[1] >= area_event[0] and i[1] <= area_event[2] and i[2] >= area_event[1] and i[2] <= area_event[3]]
-
-            stresslevel_ch = np.random.choice(stresslevel) 
-
-            spaSTRESS_gRID = spatialSTRESS_RAST(raster_MD, SL = stresslevel_ch, numEVENTS = 5, rAdius = 25)
-
-            for xxxxx in range(len(extprob)):
-    
-                if extprob[xxxxx] in starthabitats:
-                                    
-                    ind = np.where(starthabitats == extprob[xxxxx])[0].tolist()  
-                    
-                    SLpPT = spaSTRESS_gRID[int((raster_MD[1]-xy_pts[0][2])/100)][int((xy_pts[0][1]-raster_MD[0])/100)]
- 
-                    stress = simSTRESS_VALUE(starthabitats_hq[ind][0], SLpPT)
-                     
-                    occhabitats[3][(extprob[xxxxx]-1)] = occhabitats[3][(extprob[xxxxx]-1)]-occhabitats[3][(extprob[xxxxx]-1)]*stress
- 
-                    if occhabitats[3][(extprob[xxxxx]-1)] == 0:
-                        
-                        occhabitats[1][(extprob[xxxxx]-1)] = -111
-                        occhabitats[2][(extprob[xxxxx]-1)] = -111
 
         starthabitats = starthabitats[np.where(occhabitats[3][starthabitats-1] >= 20)] # starthabitats with less than 20 individuals are remove from starthabitats 
 
@@ -361,17 +317,17 @@ for xxxx in range(10):
                     starthabitats, ind = np.unique(np.append(starthabitats,[occhabitats[0][habitats_shortpath_red[1][xxx]-1]]), return_index=True)
                     starthabitats = starthabitats[np.argsort(ind)].astype(int)
 
-    occhabitats[3] = occhabitats[3] * 0.025       
+    occhabitats[3] = occhabitats[3]       
           
     toins = str(np.array(occhabitats).T.tolist())[1:-1].replace('[','(').replace(']',')')
     
 #####
     
     if xxxx == 0:
-        cursor.execute("INSERT INTO results.thetalog_22092017 (pts_id, firstcol_"+str(xxxx+1)+"_timestep, origin_"+str(xxxx+1)+"_timestep, biomass_"+str(xxxx+1)+"_timestep, first25_"+str(xxxx+1)+"_timestep) values "+toins+";") 
+        cursor.execute("INSERT INTO results.HH_20092017 (pts_id, firstcol_"+str(xxxx+1)+"_timestep, origin_"+str(xxxx+1)+"_timestep, indiv_"+str(xxxx+1)+"_timestep, first25_"+str(xxxx+1)+"_timestep) values "+toins+";") 
 
     else:
-        cursor.execute("UPDATE results.thetalog_22092017 SET firstcol_"+str(xxxx+1)+"_timestep = firstcol_"+str(xxxx+1)+"_timestep_arr, origin_"+str(xxxx+1)+"_timestep = origin_"+str(xxxx+1)+"_timestep_arr, biomass_"+str(xxxx+1)+"_timestep = biomass_"+str(xxxx+1)+"_timestep_arr, first25_"+str(xxxx+1)+"_timestep = first25_"+str(xxxx+1)+"_timestep_arr from (values "+toins+") as c(pts_id_arr, firstcol_"+str(xxxx+1)+"_timestep_arr, origin_"+str(xxxx+1)+"_timestep_arr, biomass_"+str(xxxx+1)+"_timestep_arr, first25_"+str(xxxx+1)+"_timestep_arr) WHERE pts_id = pts_id_arr;") 
+        cursor.execute("UPDATE results.HH_20092017 SET firstcol_"+str(xxxx+1)+"_timestep = firstcol_"+str(xxxx+1)+"_timestep_arr, origin_"+str(xxxx+1)+"_timestep = origin_"+str(xxxx+1)+"_timestep_arr, indiv_"+str(xxxx+1)+"_timestep = indiv_"+str(xxxx+1)+"_timestep_arr, first25_"+str(xxxx+1)+"_timestep = first25_"+str(xxxx+1)+"_timestep_arr from (values "+toins+") as c(pts_id_arr, firstcol_"+str(xxxx+1)+"_timestep_arr, origin_"+str(xxxx+1)+"_timestep_arr, indiv_"+str(xxxx+1)+"_timestep_arr, first25_"+str(xxxx+1)+"_timestep_arr) WHERE pts_id = pts_id_arr;") 
 
 conn.commit()
 
