@@ -29,9 +29,3 @@ processing.alglist()
 QgsApplication.exitQgis()
 QApplication.exit()
 
-
-import sys
-from qgis.core import *
-from PyQt4.QtGui import *
-app = QApplication([])
-                   

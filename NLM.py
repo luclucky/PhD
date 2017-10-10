@@ -1,5 +1,7 @@
 
 import numpy as np
+np.set_printoptions(suppress=True)
+
 import sys, gdal, ogr, os, osr
 import random
         

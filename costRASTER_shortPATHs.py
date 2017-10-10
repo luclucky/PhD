@@ -6,6 +6,8 @@ Created on 2 Feb 2017
 
 #from randShortPath import randShortPath as rSP
 import numpy as np
+np.set_printoptions(suppress=True)
+
 import gdal, ogr, os, osr
 
 import psycopg2
@@ -247,71 +249,4 @@ for xxxxx in range(numRandPTs):
 
             conn.commit()
             
-          
-conn = psycopg2.connect("host=localhost port=5432 dbname=DB_PhD user=lucas password=1gis!gis1")
-cursor = conn.cursor()  
-            
-numRandPTs = 10
-
-for x in range(numRandPTs):
-
-    for y in range(numRandPTs):
-        
-# #         cursor.execute("""DROP TABLE IF EXISTS stream_network.habitats_shortpath_red_nlmr_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp;""")
-#  
-#         cursor.execute("""CREATE TABLE stream_network.habitats_shortpath_red_nlmr_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp_bku AS SELECT * FROM stream_network.habitats_shortpath_red_nlmr_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp;""")
-#          
-# #         cursor.execute("""DROP TABLE IF EXISTS stream_network.habitats_shortpath_red_nlmrc_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp;""")
-#                   
-#         cursor.execute("""CREATE TABLE stream_network.habitats_shortpath_red_nlmrc_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp_bku AS SELECT * FROM stream_network.habitats_shortpath_red_nlmrc_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp;""")
-#               
-# #         cursor.execute("""DROP TABLE IF EXISTS stream_network.habitats_shortpath_red_nlmre_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp;""")
-#               
-#         cursor.execute("""CREATE TABLE stream_network.habitats_shortpath_red_nlmre_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp_bku AS SELECT * FROM stream_network.habitats_shortpath_red_nlmre_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp;""")
-#                           
-#         conn.commit()
-         
-         
-        cursor.execute("""UPDATE stream_network.habitats_shortpath_red_nlmr_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp SET aim = (SELECT stream_network.pts_habitat_red_50x50_start_"""+str(y)+""".ids FROM stream_network.pts_habitat_red_50x50_start_"""+str(y)+""" WHERE stream_network.habitats_shortpath_red_nlmr_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp.aim = stream_network.pts_habitat_red_50x50_start_"""+str(y)+""".ids_org);""")
-    
-        cursor.execute("""UPDATE stream_network.habitats_shortpath_red_nlmr_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp SET start = (SELECT stream_network.pts_habitat_red_50x50_start_"""+str(y)+""".ids FROM stream_network.pts_habitat_red_50x50_start_"""+str(y)+""" WHERE stream_network.habitats_shortpath_red_nlmr_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp.start = stream_network.pts_habitat_red_50x50_start_"""+str(y)+""".ids_org);""")
-        
-        conn.commit()
-
-        cursor.execute("""UPDATE stream_network.habitats_shortpath_red_nlmrc_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp SET aim = (SELECT stream_network.pts_habitat_red_50x50_start_"""+str(y)+""".ids FROM stream_network.pts_habitat_red_50x50_start_"""+str(y)+""" WHERE stream_network.habitats_shortpath_red_nlmrc_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp.aim = stream_network.pts_habitat_red_50x50_start_"""+str(y)+""".ids_org);""")
-    
-        cursor.execute("""UPDATE stream_network.habitats_shortpath_red_nlmrc_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp SET start = (SELECT stream_network.pts_habitat_red_50x50_start_"""+str(y)+""".ids FROM stream_network.pts_habitat_red_50x50_start_"""+str(y)+""" WHERE stream_network.habitats_shortpath_red_nlmrc_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp.start = stream_network.pts_habitat_red_50x50_start_"""+str(y)+""".ids_org);""")
-        
-        conn.commit()    
-
-        cursor.execute("""UPDATE stream_network.habitats_shortpath_red_nlmre_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp SET aim = (SELECT stream_network.pts_habitat_red_50x50_start_"""+str(y)+""".ids FROM stream_network.pts_habitat_red_50x50_start_"""+str(y)+""" WHERE stream_network.habitats_shortpath_red_nlmre_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp.aim = stream_network.pts_habitat_red_50x50_start_"""+str(y)+""".ids_org);""")
-    
-        cursor.execute("""UPDATE stream_network.habitats_shortpath_red_nlmre_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp SET start = (SELECT stream_network.pts_habitat_red_50x50_start_"""+str(y)+""".ids FROM stream_network.pts_habitat_red_50x50_start_"""+str(y)+""" WHERE stream_network.habitats_shortpath_red_nlmre_testarea_50x50_"""+str(x)+"""_start_"""+str(y)+"""_resamp.start = stream_network.pts_habitat_red_50x50_start_"""+str(y)+""".ids_org);""")
-        
-        conn.commit()            
-            
-    
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
+     

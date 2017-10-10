@@ -134,7 +134,7 @@ habitats_extent = [float(i) for i in habitats_extent]
 cursor.execute("SELECT id, ST_AsText(geom) FROM demo_dispersal_pts;")
 xy_PTS = cursor.fetchall()
 xy_PTS = [[i[0],re.findall(r"[\w']+",i[1])[1:]] for i in xy_PTS]
-xy_PTS = [[i[0], float(i[1][0]), float(i[1][1])] for i in xy_PTS]
+xy_PTS = [[i[0], float(i[1][0]), float(i[1][2])] for i in xy_PTS]
 xy_PTS.sort()
 
 cursor.execute("SELECT start, aim, costs FROM habitats_shortpath_red;")

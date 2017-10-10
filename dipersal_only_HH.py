@@ -7,6 +7,8 @@ created on 2 feb 2017
 #from randshortpath import randshortpath as rsp
 
 import numpy as np
+np.set_printoptions(suppress=True)
+
 import gdal, ogr, os, osr
 import random
 import scipy 
@@ -61,7 +63,9 @@ def spatialSTRESS_RAST(raster_MD, SL, numEVENTS, rAdius):
 def PROBreachCONHABITAT(Co, maxCo):
     
     P = Co * 0.0
-    P[np.where(Co < maxCo)] = (1 - (Co[np.where(Co < maxCo)] / maxCo))**2
+    
+#     P[np.where(Co < maxCo)] = (1 - (Co[np.where(Co < maxCo)] / maxCo))**2
+    P[np.where(Co < maxCo)] = (1 - (Co[np.where(Co < maxCo)] / maxCo))
     return P
 
 def logGRO(K, N, r, t):
@@ -91,9 +95,9 @@ def DENdepEMI_RATE(M, N, K, s):
     EmRa = N * M * (N / (K)) **(s+1)
     return EmRa
 
-def percDISTRI_INDIdisper(HQ, VAR):
+def percDISTRI_INDIdisper(COSTs, VAR):
 
-    CO_rev = ((HQ-max(HQ))*-1+min(HQ))
+    CO_rev = ((COSTs-max(COSTs))*-1+min(COSTs))
             
     if VAR == 'linear':
         percIND = np.round(CO_rev/sum(CO_rev),2)
@@ -126,91 +130,115 @@ def randomEXT(extPROB_perRUN, occhabitats):
 
 #####
 
+# MODEL PARAMETERS 1
+maxCo = 1250
+
+#####
+
 conn = psycopg2.connect("host=localhost port=5432 dbname=DB_PhD user=lucas password=1gis!gis1")
 cursor = conn.cursor()
 
-start = time.time()
-
-cursor.execute("SELECT st_extent(geom) FROM stream_network.pts_habitat_red_10x10_start_0;")
+cursor.execute("SELECT st_extent(geom) FROM stream_network.pts_habitat_red_50x50_start_0;")
 habitats_extent = cursor.fetchone()
 habitats_extent = re.findall(r"[\w.]+", habitats_extent[0])[1:]
 habitats_extent = [float(i) for i in habitats_extent]
 
-cursor.execute("SELECT idS, st_astext(geom) FROM stream_network.pts_habitat_red_10x10_start_0;")
+cursor.execute("SELECT idS, st_astext(geom) FROM stream_network.pts_habitat_red_50x50_start_0;")
 xy_pts = cursor.fetchall()
 xy_pts = [[i[0],re.findall(r"[\w']+",i[1])[1:]] for i in xy_pts]
-xy_pts = [[i[0], float(i[1][0]), float(i[1][1])] for i in xy_pts]
+xy_pts = [[i[0], float(i[1][0]), float(i[1][2])] for i in xy_pts]
 xy_pts.sort()
 
-cursor.execute("SELECT rid, ST_MetaData(rast) AS md FROM stream_network.rlp_stream_rast_testarea_10x10;")
+cursor.execute("SELECT rid, ST_MetaData(rast) AS md FROM stream_network.rlp_stream_rast_testarea_50x50;")
 raster_MD = cursor.fetchall()
 raster_MD = [float(x) for x in raster_MD[0][1][1:-1].split(',')]
 
-cursor.execute("SELECT start, aim, costs FROM stream_network.habitats_shortpath_red_nlmrc_testarea_10x10_0_start_0_resamp;")
+cursor.execute("SELECT start, aim, costs FROM stream_network.habitats_shortpath_red_nlmr_testarea_50x50_0_start_0_resamp;")
 habitats_shortpath_red = cursor.fetchall()
+habitats_shortpath_red = [i for i in habitats_shortpath_red if i[2] <= maxCo]
 habitats_shortpath_red = np.array(habitats_shortpath_red).T
 
-habitats_qual = np.random.random_sample((len(xy_pts),))  # creates ramdom HQs
-
+# habitats_qual = np.random.random_sample((len(xy_pts),))  # creates ramdom HQs
 # habitats_qual = np.load('/home/lucas/PhD/STRESSOR/TEST_DATA/habitatsQuality.npy')
-habitats_qual[np.where(habitats_qual < 0.25)] = 0.25 # min HQ set to 0.25
+# habitats_qual[np.where(habitats_qual < 0.25)] = 0.25 # min HQ set to 0.25
 
-cursor.execute("""DROP TABLE IF EXISTS results.HH_20092017;""")
-cursor.execute("CREATE table results.HH_20092017 (pts_id bigint);")
+cursor.execute("""SELECT hq FROM calc_hh.habitats_qual;""")
+habitats_qual = cursor.fetchall()
+habitats_qual = np.array([i[0] for i in habitats_qual])
+
+#####
+
+# MODEL PARAMETERS 2
+
+timesteps = 100
+
+stresslevel = [0.025, 0.05, 0.075, 0.1] # intensity of stress events
+
+# stresslevel = (np.random.choice(50, 3)/100.0).tolist()
+
+percstress_events = 0.0 # percentage of stress occurrences per timesteps
+
+stress_events = np.random.choice(timesteps, int(percstress_events*timesteps)) # random selection depending on percstress_events
+
+area_event = habitats_extent # area where stress occurs - in this case: total area 
+
+growthfunc = 'logGRO'    
+theta = 0.5
+igr = 2.0
+t = 1.0
+
+TH = 20
+
+m_max = 0.25
+s = 0.5
+
+extPROB_perRUN = 0.05
+
+#####
+
+cursor.execute("""SELECT column_name FROM information_schema.columns WHERE table_name='starthabitats50x50_inv';""")
+numSH = cursor.fetchall()
+numSH = [i[0] for i in numSH]
+
+cursor.execute("""DROP TABLE IF EXISTS result_hh.sh_200;""")
+cursor.execute("""CREATE table result_hh.sh_200 (pts_id BIGSERIAL);""")
 
 conn.commit()
 
-for xxxx in range(100):
+for xxxx in range(len(numSH[1:])):
+    
+    start = time.time()
     
     print('run ' + str(xxxx))
         
-    cursor.execute("alter table results.HH_20092017 add firstcol_"+str(xxxx+1)+"_timestep bigint, add origin_"+str(xxxx+1)+"_timestep bigint, add indiv_"+str(xxxx+1)+"_timestep float, add first25_"+str(xxxx+1)+"_timestep bigint;")
+    cursor.execute("""ALTER TABLE result_hh.sh_200 add firstcol_"""+str(xxxx+1)+""" bigint, add origin_"""+str(xxxx+1)+""" bigint, add indiv_"""+str(xxxx+1)+""" float, add first20_"""+str(xxxx+1)+""" bigint;""")
     
-    starthabitats = np.random.choice(np.unique([habitats_shortpath_red[0], habitats_shortpath_red[1]]), 10).astype(int) # number of occupied habitats first run
-        
+#     starthabitats = np.random.choice(np.unique([habitats_shortpath_red[0], habitats_shortpath_red[1]]), int(len(xy_pts)*0.1+0.5)).astype(int) # number of occupied habitats first run
+    
+    cursor.execute("""SELECT sh_"""+str(xxxx+1)+""" FROM calc_hh.starthabitats50x50_inv;""")
+    starthabitats = cursor.fetchall()
+    starthabitats = np.array([i[0] for i in starthabitats])
+
     starthabitats_hq = habitats_qual[starthabitats-1]
 
-    occhabitats = np.array([range(len(habitats_qual)+1)[1:], [-999] * len(habitats_qual), [-999] * len(habitats_qual), [0.0] * len(habitats_qual), [-999] * len(habitats_qual)])
+    occhabitats = np.array([range(len(xy_pts)+1)[1:], [-999] * len(xy_pts), [-999] * len(xy_pts), [0.0] * len(xy_pts), [-999] * len(xy_pts)])
                 
     occhabitats[1][(starthabitats-1).tolist()] = 0
     occhabitats[2][(starthabitats-1).tolist()] = 0
     occhabitats[3][(starthabitats-1).tolist()] = starthabitats_hq * 100.0
     occhabitats[4][(starthabitats-1).tolist()] = 0
 
-    prob = PROBreachCONHABITAT(Co = habitats_shortpath_red[2], maxCo = 1500)
+    prob = PROBreachCONHABITAT(Co = habitats_shortpath_red[2], maxCo = maxCo)
 
-    timesteps = 100
-
-    stresslevel = [0.025, 0.05, 0.075, 0.1] # intensity of stress events
-
-#     stresslevel = (np.random.choice(50, 3)/100.0).tolist()
-
-    percstress_events = 0.0 # percentage of stress occurrences per timesteps
-    
-    stress_events = np.random.choice(timesteps, int(percstress_events*timesteps)) # random selection depending on percstress_events
-    
-    area_event = habitats_extent # area where stress occurs - in this case: total area 
-    
-    growthfunc = 'logGRO'    
-    theta = 0.5
-    igr = 2.0
-    t  = 1.0
-    
-    TH = 20
-    
-    m_max = 0.20
-    s = 0.5
-    
-    extPROB_perRUN = 0.05
-    
     for x in range(timesteps):
-                
+        
         if len(occhabitats[0][np.where(occhabitats[3] > 0.0)].astype(int)) == 0:
             break
                 
         starthabitats = occhabitats[0][np.where(occhabitats[3] > 0.0)].astype(int)
 
-        igr_rand = igr + igr*random.uniform(-0.25, 0.25) 
+#         igr_rand = igr + igr*random.uniform(-0.25, 0.25) 
+        igr_rand = igr  
 
         starthabitats_hq = habitats_qual[starthabitats-1] # habitat-quality of starthabitats
         starthabitats_indnr = occhabitats[3][starthabitats-1] # number of individuals in starthabitats
@@ -255,11 +283,11 @@ for xxxx in range(100):
             
                 continue
             
-            disind = DENdepEMI_RATE(M = m_max, N = occhabitats[3][starthabitats[xx]-1], K = habitats_qual[starthabitats[xx]-1]*100, s = s)
+            disind = occhabitats[3][starthabitats[xx]-1] * 0.25 ## instead of DENdepEMI_RATE
                    
             occhabitats[3][starthabitats[xx]-1] = occhabitats[3][starthabitats[xx]-1] - disind
     
-            disind_part = percDISTRI_INDIdisper(HQ = habitats_shortpath_red[2][conhabitats_ind], VAR = 'exponential')
+            disind_part = percDISTRI_INDIdisper(COSTs = habitats_shortpath_red[2][conhabitats_ind], VAR = 'exponential')
 
             for xxx in conhabitats_ind:
                                 
@@ -267,15 +295,15 @@ for xxxx in range(100):
                 
                 disind_part = disind_part[1:]
                 
-                if disind_perc == 0:
-                    
-                    continue
-                
 #                 yn = np.random.choice([1, 0], 1, p=[prob[xxx], 1-prob[xxx]])[0]
             
 #                 if yn == 1:
 
                 disind_perc = disind_perc * prob[xxx]
+                        
+                if disind_perc == 0.0:
+                    
+                    continue
                             
                 if occhabitats[0][habitats_shortpath_red[0][xxx]-1] != starthabitats[xx]:
                     
@@ -291,7 +319,7 @@ for xxxx in range(100):
                                                                    
                         occhabitats[3][habitats_shortpath_red[0][xxx]-1] = occhabitats[3][habitats_shortpath_red[0][xxx]-1] + disind_perc # function to calculate number of individuals in h -> plus disind_perc
                         
-                    if  occhabitats[4][habitats_shortpath_red[0][xxx]-1] in (-111, -999) and occhabitats[3][habitats_shortpath_red[0][xxx]-1] >= 25.0:
+                    if  occhabitats[4][habitats_shortpath_red[0][xxx]-1] in (-111, -999) and occhabitats[3][habitats_shortpath_red[0][xxx]-1] >= 20.0:
                         occhabitats[4][habitats_shortpath_red[0][xxx]-1] = x+1
                         
                     starthabitats, ind = np.unique(np.append(starthabitats,[occhabitats[0][habitats_shortpath_red[0][xxx]-1]]), return_index=True)
@@ -311,28 +339,27 @@ for xxxx in range(100):
 
                         occhabitats[3][habitats_shortpath_red[1][xxx]-1] = occhabitats[3][habitats_shortpath_red[1][xxx]-1] + disind_perc# function to calculate number of individuals in h -> plus disind_perc
                   
-                    if  occhabitats[4][habitats_shortpath_red[1][xxx]-1] in (-111, -999) and occhabitats[3][habitats_shortpath_red[1][xxx]-1] >= 25:
+                    if  occhabitats[4][habitats_shortpath_red[1][xxx]-1] in (-111, -999) and occhabitats[3][habitats_shortpath_red[1][xxx]-1] >= 20:
                         occhabitats[4][habitats_shortpath_red[1][xxx]-1] = x+1
                         
                     starthabitats, ind = np.unique(np.append(starthabitats,[occhabitats[0][habitats_shortpath_red[1][xxx]-1]]), return_index=True)
                     starthabitats = starthabitats[np.argsort(ind)].astype(int)
 
-    occhabitats[3] = occhabitats[3]       
           
     toins = str(np.array(occhabitats).T.tolist())[1:-1].replace('[','(').replace(']',')')
     
 #####
     
     if xxxx == 0:
-        cursor.execute("INSERT INTO results.HH_20092017 (pts_id, firstcol_"+str(xxxx+1)+"_timestep, origin_"+str(xxxx+1)+"_timestep, indiv_"+str(xxxx+1)+"_timestep, first25_"+str(xxxx+1)+"_timestep) values "+toins+";") 
+        cursor.execute("INSERT INTO result_hh.sh_200 (pts_id, firstcol_"+str(xxxx+1)+", origin_"+str(xxxx+1)+", indiv_"+str(xxxx+1)+", first20_"+str(xxxx+1)+") values "+toins+";") 
 
     else:
-        cursor.execute("UPDATE results.HH_20092017 SET firstcol_"+str(xxxx+1)+"_timestep = firstcol_"+str(xxxx+1)+"_timestep_arr, origin_"+str(xxxx+1)+"_timestep = origin_"+str(xxxx+1)+"_timestep_arr, indiv_"+str(xxxx+1)+"_timestep = indiv_"+str(xxxx+1)+"_timestep_arr, first25_"+str(xxxx+1)+"_timestep = first25_"+str(xxxx+1)+"_timestep_arr from (values "+toins+") as c(pts_id_arr, firstcol_"+str(xxxx+1)+"_timestep_arr, origin_"+str(xxxx+1)+"_timestep_arr, indiv_"+str(xxxx+1)+"_timestep_arr, first25_"+str(xxxx+1)+"_timestep_arr) WHERE pts_id = pts_id_arr;") 
+        cursor.execute("UPDATE result_hh.sh_200 SET firstcol_"+str(xxxx+1)+" = firstcol_"+str(xxxx+1)+"_arr, origin_"+str(xxxx+1)+" = origin_"+str(xxxx+1)+"_arr, indiv_"+str(xxxx+1)+" = indiv_"+str(xxxx+1)+"_arr, first20_"+str(xxxx+1)+" = first20_"+str(xxxx+1)+"_arr from (values "+toins+") as c(pts_id_arr, firstcol_"+str(xxxx+1)+"_arr, origin_"+str(xxxx+1)+"_arr, indiv_"+str(xxxx+1)+"_arr, first20_"+str(xxxx+1)+"_arr) WHERE pts_id = pts_id_arr;") 
 
-conn.commit()
+    conn.commit()
 
-end = time.time()
-print(end - start)
+    end = time.time()
+    print(end - start)
 
 # close communication with the database
 cursor.close()

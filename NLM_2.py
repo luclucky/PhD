@@ -1,5 +1,7 @@
 
 import numpy as np
+np.set_printoptions(suppress=True)
+
 import sys, gdal, ogr, os, osr
 import random
         
@@ -143,7 +145,22 @@ for x in range(numNLMs):
     
     #####
     
-    nlm_RE = nlmpy.randomElementNN(int(nROW), int(nCOL), 1000*25)
+    ext = '50x50'
+    
+    if ext == '10x10':
+    
+        fac = 1
+        
+    if ext == '30x30':
+    
+        fac = 9
+    
+    if ext == '50x50':
+    
+        fac = 25
+        
+    
+    nlm_RE = nlmpy.randomElementNN(int(nROW), int(nCOL), 1000*fac)
     nlm_RE = ((nlmpy.classifyArray(nlm_RE, [.666,.111,.222]) + 1) * 25) + 25
     
     np.unique(nlm_RE)

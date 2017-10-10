@@ -1,6 +1,8 @@
 
 #from randShortPath import randShortPath as rSP
 import numpy as np
+np.set_printoptions(suppress=True)
+
 import gdal, ogr, os, osr
 import random
         
