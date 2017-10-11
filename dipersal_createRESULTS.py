@@ -160,271 +160,268 @@ extPROB_perRUN = 0.05
 #####
 
 
-def dispersal_MODEL(inHAB):
+def dispersal_MODEL(inSP):
     
-    conn = psycopg2.connect("host=localhost port=5432 dbname=DB_PhD user=lucas password=1gis!gis1")
-    cursor = conn.cursor()
-    
-    for z in range(10):
-         
-        cursor.execute("""SELECT st_extent(geom) FROM stream_network.pts_habitat_red_10x10_start_"""+str(z)+""";""")
-        habitats_extent = cursor.fetchone()
-        habitats_extent = re.findall(r"[\w.]+", habitats_extent[0])[1:]
-        habitats_extent = [float(i) for i in habitats_extent]
+    inHABs = ['pts_habitat_red_10x10', 'pts_habitat_red_30x30', 'pts_habitat_red_50x50']
+
+    for inHAB in inHABs:
+            
+        conn = psycopg2.connect("host=localhost port=5432 dbname=DB_PhD user=lucas password=1gis!gis1")
+        cursor = conn.cursor()
         
-        cursor.execute("""SELECT idS, st_astext(geom) FROM stream_network.pts_habitat_red_10x10_start_"""+str(z)+""";""")
-        xy_pts = cursor.fetchall()
-        xy_pts = [[i[0],re.findall(r"[\w']+",i[1])[1:]] for i in xy_pts]
-        xy_pts = [[i[0], float(i[1][0]), float(i[1][2])] for i in xy_pts]
-        xy_pts.sort()
-        
-        cursor.execute("SELECT rid, ST_MetaData(rast) AS md FROM stream_network.rlp_stream_rast_testarea_10x10;")
-        raster_MD = cursor.fetchall()
-        raster_MD = [float(x) for x in raster_MD[0][1][1:-1].split(',')]
-            
-        for zz in range(10):
-            
-            start = time.time()
-    
-            cursor.execute("""SELECT start, aim, costs FROM stream_network.habitats_shortpath_red_nlmrc_testarea_10x10_"""+str(z)+"""_start_"""+str(zz)+"""_resamp;""")
-            habitats_shortpath_red = cursor.fetchall()
-            habitats_shortpath_red = [i for i in habitats_shortpath_red if i[2] <= maxCo]
-            habitats_shortpath_red = np.array(habitats_shortpath_red).T
-            
-            # habitats_qual = np.random.random_sample((len(xy_pts),))  # creates ramdom HQs
-            # habitats_qual = np.load('/home/lucas/PhD/STRESSOR/TEST_DATA/habitatsQuality.npy')
-            # habitats_qual[np.where(habitats_qual < 0.25)] = 0.25 # min HQ set to 0.25
-            
-            # habitats_qual = np.random.uniform(0.25, 1.0, len(xy_pts)) # uniform distribution of HQs 
-            
-            habitats_qual = np.array(len(xy_pts) * [0.625])
-            
-            cursor.execute("""DROP TABLE IF EXISTS results.habitats_shortpath_red_nlmrc_testarea_10x10_"""+str(z)+"""_start_"""+str(zz)+""";""")
-            
-            cursor.execute("""CREATE TABLE results.habitats_shortpath_red_nlmrc_testarea_10x10_"""+str(z)+"""_start_"""+str(zz)+""" (pts_id BIGINT, geom GEOMETRY, hq FLOAT);""")
-            
-            toINS_pts = np.array(xy_pts)
-            toINS_pts = toINS_pts.tolist()
+        for z in range(10):
              
-            for i in range(len(toINS_pts)):
+            cursor.execute("""SELECT st_extent(geom) FROM stream_network."""+str(inHAB)+"""_start_"""+str(z)+""";""")
+            habitats_extent = cursor.fetchone()
+            habitats_extent = re.findall(r"[\w.]+", habitats_extent[0])[1:]
+            habitats_extent = [float(i) for i in habitats_extent]
             
-                toINS_pts[i][1] = 'ST_SetSRID(ST_MakePoint' + str(toINS_pts[i][1:]).replace('[','(').replace(']',')')+', 25832)'
-                toINS_pts[i][2] = str(habitats_qual[i])
+            cursor.execute("""SELECT idS, st_astext(geom) FROM stream_network."""+str(inHAB)+"""_start_"""+str(z)+""";""")
+            xy_pts = cursor.fetchall()
+            xy_pts = [[i[0],re.findall(r"[\w']+",i[1])[1:]] for i in xy_pts]
+            xy_pts = [[i[0], float(i[1][0]), float(i[1][2])] for i in xy_pts]
+            xy_pts.sort()
             
-            toINS_pts = str(np.array(toINS_pts).tolist())[1:-1].replace('[','(').replace(']',')').replace('\'','')
-            
-            cursor.execute("""INSERT INTO results.habitats_shortpath_red_nlmrc_testarea_10x10_"""+str(z)+"""_start_"""+str(zz)+""" (pts_id, geom, hq) values """+toINS_pts+""";""")  
-            
-            conn.commit()
-            
-            for xxxx in range(100):
+            cursor.execute("""SELECT rid, ST_MetaData(rast) AS md FROM stream_network.rlp_stream_rast_testarea_"""+str(inHAB[-5:])+""";""")
+            raster_MD = cursor.fetchall()
+            raster_MD = [float(x) for x in raster_MD[0][1][1:-1].split(',')]
                 
-                print('run ' + str(xxxx))
-                    
-                cursor.execute("""ALTER TABLE results.habitats_shortpath_red_nlmrc_testarea_10x10_"""+str(z)+"""_start_"""+str(zz)+""" ADD firstcol_"+str(xxxx+1)+"_timestep bigint, ADD origin_"+str(xxxx+1)+"_timestep bigint, ADD biomass_"+str(xxxx+1)+"_timestep float, ADD first20_"+str(xxxx+1)+"_timestep bigint;""")
-                    
-                starthabitats = np.random.choice(np.unique([habitats_shortpath_red[0], habitats_shortpath_red[1]]), int(len(xy_pts)*0.1+0.5)).astype(int) # number of occupied habitats first run
+            for zz in range(10):
                 
-                starthabitats_hq = habitats_qual[starthabitats-1]
-            
-                occhabitats = np.array([range(len(habitats_qual)+1)[1:], [-999] * len(habitats_qual), [-999] * len(habitats_qual), [0.0] * len(habitats_qual), [-999] * len(habitats_qual)])
-                            
-                occhabitats[1][(starthabitats-1).tolist()] = 0
-                occhabitats[2][(starthabitats-1).tolist()] = 0
-                occhabitats[3][(starthabitats-1).tolist()] = starthabitats_hq * 100.0
-                occhabitats[4][(starthabitats-1).tolist()] = 0
-            
-                prob = PROBreachCONHABITAT(Co = habitats_shortpath_red[2], maxCo = maxCo)
-            
-                for x in range(timesteps):
-                            
-                    if len(occhabitats[0][np.where(occhabitats[3] > 0.0)].astype(int)) == 0:
-                        break
-                    
-            #         randomEXT(extPROB_perRUN, occhabitats)
-                    
-                    starthabitats = occhabitats[0][np.where(occhabitats[3] > 0.0)].astype(int)
-            
-            #         igr_rand = igr + igr*random.uniform(-0.25, 0.25) 
-                    igr_rand = igr 
-            
-                    starthabitats_hq = habitats_qual[starthabitats-1] # habitat-quality of starthabitats
-                    starthabitats_indnr = occhabitats[3][starthabitats-1] # number of individuals in starthabitats
-            
-                    if growthfunc == 'logGRO': 
-                        
-                        starthabitats_indnr = logGRO(K = starthabitats_hq*100, N = starthabitats_indnr, r = igr_rand, t = 1)
-            
-                    if growthfunc == 'logGRO_T': 
-                        
-                        starthabitats_indnr[np.where(starthabitats_indnr > TH)] = logGRO(K = starthabitats_hq[np.where(starthabitats_indnr > TH)]*100, N = starthabitats_indnr[np.where(starthabitats_indnr > TH)], r = igr_rand, t = 1)
-            
-                        starthabitats_indnr[np.where(starthabitats_indnr <= TH)] = logGRO_T(T = TH, N = starthabitats_indnr[np.where(starthabitats_indnr <= TH)], r = igr_rand, t = 1)
-                        
-                    if growthfunc == 'THETAlogGRO': 
-                        
-                        starthabitats_indnr = THETAlogGRO(K = starthabitats_hq*100, N = starthabitats_indnr, r = igr_rand, t = 1)
-            
-                    if growthfunc == 'THETAlogGRO_T': 
-                        
-                        starthabitats_indnr[np.where(starthabitats_indnr > TH)] = THETAlogGRO(K = starthabitats_hq[np.where(starthabitats_indnr > TH)]*100, N = starthabitats_indnr[np.where(starthabitats_indnr > TH)], r = igr_rand, t = 1)
-            
-                        starthabitats_indnr[np.where(starthabitats_indnr <= TH)] = THETAlogGRO_T(T = TH, N = starthabitats_indnr[np.where(starthabitats_indnr <= TH)], r = igr_rand, t = 1)
-                        
-                    occhabitats[3][starthabitats-1] = np.round(starthabitats_indnr, 3)
-            
-                    if x in stress_events:
-                        
-                        extprob = [i[0]  for i in xy_pts if i[1] >= area_event[0] and i[1] <= area_event[2] and i[2] >= area_event[1] and i[2] <= area_event[3]]
-            
-                        stresslevel_ch = np.random.choice(stresslevel) 
-            
-                        spaSTRESS_gRID = spatialSTRESS_RAST(raster_MD, SL = stresslevel_ch, numEVENTS = 5, rAdius = 25)
-            
-                        for xxxxx in range(len(extprob)):
+                start = time.time()
+        
+                cursor.execute("""SELECT start, aim, costs FROM stream_network."""+str(inSP)+"""_"""+str(inHAB[-5:])+"""_"""+str(zz)+"""_start_"""+str(z)+"""_resamp;""")
+                habitats_shortpath_red = cursor.fetchall()
+                habitats_shortpath_red = [i for i in habitats_shortpath_red if i[2] <= maxCo]
+                habitats_shortpath_red = np.array(habitats_shortpath_red).T
                 
-                            if extprob[xxxxx] in starthabitats:
-                                                
-                                ind = np.where(starthabitats == extprob[xxxxx])[0].tolist()  
+                # habitats_qual = np.random.random_sample((len(xy_pts),))  # creates ramdom HQs
+                # habitats_qual = np.load('/home/lucas/PhD/STRESSOR/TEST_DATA/habitatsQuality.npy')
+                # habitats_qual[np.where(habitats_qual < 0.25)] = 0.25 # min HQ set to 0.25
+                
+                # habitats_qual = np.random.uniform(0.25, 1.0, len(xy_pts)) # uniform distribution of HQs 
+                
+                habitats_qual = np.array(len(xy_pts) * [0.625])
+                
+                cursor.execute("""DROP TABLE IF EXISTS results."""+str(inSP)+"""_"""+str(inHAB[-5:])+"""_"""+str(zz)+"""_start_"""+str(z)+""";""")
+                cursor.execute("""CREATE TABLE results."""+str(inSP)+"""_"""+str(inHAB[-5:])+"""_"""+str(zz)+"""_start_"""+str(z)+""" (pts_id BIGINT, geom GEOMETRY, hq FLOAT);""")
+                
+                toINS_pts = np.array(xy_pts)
+                toINS_pts = toINS_pts.tolist()
+                 
+                for i in range(len(toINS_pts)):
+                
+                    toINS_pts[i][1] = 'ST_SetSRID(ST_MakePoint' + str(toINS_pts[i][1:]).replace('[','(').replace(']',')')+', 25832)'
+                    toINS_pts[i][2] = str(habitats_qual[i])
+                
+                toINS_pts = str(np.array(toINS_pts).tolist())[1:-1].replace('[','(').replace(']',')').replace('\'','')
+                
+                cursor.execute("""INSERT INTO results."""+str(inSP)+"""_"""+str(inHAB[-5:])+"""_"""+str(zz)+"""_start_"""+str(z)+""" (pts_id, geom, hq) values """+toINS_pts+""";""")  
+                
+                conn.commit()
+                
+                for xxxx in range(10):
+                    
+                    print(str(inSP)+'_'+str(inHAB[-5:])+'_'+str(zz)+'_start_'+str(z) + ': run ' + str(xxxx))
+                        
+                    cursor.execute("""ALTER TABLE results."""+str(inSP)+"""_"""+str(inHAB[-5:])+"""_"""+str(zz)+"""_start_"""+str(z)+""" ADD firstcol_"""+str(xxxx+1)+"""_timestep bigint, ADD origin_"""+str(xxxx+1)+"""_timestep bigint, ADD biomass_"""+str(xxxx+1)+"""_timestep float, ADD first20_"""+str(xxxx+1)+"""_timestep bigint;""")
+                        
+                    starthabitats = np.random.choice(np.unique([habitats_shortpath_red[0], habitats_shortpath_red[1]]), int(len(xy_pts)*0.1+0.5)).astype(int) # number of occupied habitats first run
+                    
+                    starthabitats_hq = habitats_qual[starthabitats-1]
+                
+                    occhabitats = np.array([range(len(habitats_qual)+1)[1:], [-999] * len(habitats_qual), [-999] * len(habitats_qual), [0.0] * len(habitats_qual), [-999] * len(habitats_qual)])
                                 
-                                SLpPT = spaSTRESS_gRID[int((raster_MD[1]-xy_pts[0][2])/100)][int((xy_pts[0][1]-raster_MD[0])/100)]
-             
-                                stress = simSTRESS_VALUE(starthabitats_hq[ind][0], SLpPT)
-                                 
-                                occhabitats[3][(extprob[xxxxx]-1)] = occhabitats[3][(extprob[xxxxx]-1)]-occhabitats[3][(extprob[xxxxx]-1)]*stress
-             
-                                if occhabitats[3][(extprob[xxxxx]-1)] == 0:
-                                    
-                                    occhabitats[1][(extprob[xxxxx]-1)] = -111
-                                    occhabitats[2][(extprob[xxxxx]-1)] = -111
-            
-                    starthabitats = starthabitats[np.where(occhabitats[3][starthabitats-1] >= 20)] # starthabitats with less than 20 individuals are remove from starthabitats 
-            
-                    for xx in range(len(starthabitats)):
-            
-                        if starthabitats[xx] in habitats_shortpath_red[0] or starthabitats[xx] in habitats_shortpath_red[1]:
-                            conhabitats_ind = np.hstack(np.array([np.where(habitats_shortpath_red[0] == starthabitats[xx])[0].tolist(), np.where(habitats_shortpath_red[1] == starthabitats[xx])[0].tolist()]).flat).tolist()
+                    occhabitats[1][(starthabitats-1).tolist()] = 0
+                    occhabitats[2][(starthabitats-1).tolist()] = 0
+                    occhabitats[3][(starthabitats-1).tolist()] = starthabitats_hq * 100.0
+                    occhabitats[4][(starthabitats-1).tolist()] = 0
+                
+                    prob = PROBreachCONHABITAT(Co = habitats_shortpath_red[2], maxCo = maxCo)
+                
+                    for x in range(timesteps):
+                                
+                        if len(occhabitats[0][np.where(occhabitats[3] > 0.0)].astype(int)) == 0:
+                            break
+                        
+                #         randomEXT(extPROB_perRUN, occhabitats)
+                        
+                        starthabitats = occhabitats[0][np.where(occhabitats[3] > 0.0)].astype(int)
+                
+                #         igr_rand = igr + igr*random.uniform(-0.25, 0.25) 
+                        igr_rand = igr 
+                
+                        starthabitats_hq = habitats_qual[starthabitats-1] # habitat-quality of starthabitats
+                        starthabitats_indnr = occhabitats[3][starthabitats-1] # number of individuals in starthabitats
+                
+                        if growthfunc == 'logGRO': 
                             
-                        else:
-                            continue
+                            starthabitats_indnr = logGRO(K = starthabitats_hq*100, N = starthabitats_indnr, r = igr_rand, t = 1)
+                
+                        if growthfunc == 'logGRO_T': 
                             
-                        torem = []
-            
-                        for y in conhabitats_ind:
+                            starthabitats_indnr[np.where(starthabitats_indnr > TH)] = logGRO(K = starthabitats_hq[np.where(starthabitats_indnr > TH)]*100, N = starthabitats_indnr[np.where(starthabitats_indnr > TH)], r = igr_rand, t = 1)
+                
+                            starthabitats_indnr[np.where(starthabitats_indnr <= TH)] = logGRO_T(T = TH, N = starthabitats_indnr[np.where(starthabitats_indnr <= TH)], r = igr_rand, t = 1)
                             
-                            if habitats_shortpath_red[0][y] != starthabitats[xx]:
+                        if growthfunc == 'THETAlogGRO': 
                             
-                                if occhabitats[3][habitats_shortpath_red[0][y]-1] >= habitats_qual[occhabitats[0][habitats_shortpath_red[0][y]-1]-1]*100:
-                                    
-                                    torem.append(y)
+                            starthabitats_indnr = THETAlogGRO(K = starthabitats_hq*100, N = starthabitats_indnr, r = igr_rand, t = 1)
+                
+                        if growthfunc == 'THETAlogGRO_T': 
                             
+                            starthabitats_indnr[np.where(starthabitats_indnr > TH)] = THETAlogGRO(K = starthabitats_hq[np.where(starthabitats_indnr > TH)]*100, N = starthabitats_indnr[np.where(starthabitats_indnr > TH)], r = igr_rand, t = 1)
+                
+                            starthabitats_indnr[np.where(starthabitats_indnr <= TH)] = THETAlogGRO_T(T = TH, N = starthabitats_indnr[np.where(starthabitats_indnr <= TH)], r = igr_rand, t = 1)
+                            
+                        occhabitats[3][starthabitats-1] = np.round(starthabitats_indnr, 3)
+                
+#                         if x in stress_events:
+#                             
+#                             extprob = [i[0]  for i in xy_pts if i[1] >= area_event[0] and i[1] <= area_event[2] and i[2] >= area_event[1] and i[2] <= area_event[3]]
+#                 
+#                             stresslevel_ch = np.random.choice(stresslevel) 
+#                 
+#                             spaSTRESS_gRID = spatialSTRESS_RAST(raster_MD, SL = stresslevel_ch, numEVENTS = 5, rAdius = 25)
+#                 
+#                             for xxxxx in range(len(extprob)):
+#                     
+#                                 if extprob[xxxxx] in starthabitats:
+#                                                     
+#                                     ind = np.where(starthabitats == extprob[xxxxx])[0].tolist()  
+#                                     
+#                                     SLpPT = spaSTRESS_gRID[int((raster_MD[1]-xy_pts[0][2])/100)][int((xy_pts[0][1]-raster_MD[0])/100)]
+#                  
+#                                     stress = simSTRESS_VALUE(starthabitats_hq[ind][0], SLpPT)
+#                                      
+#                                     occhabitats[3][(extprob[xxxxx]-1)] = occhabitats[3][(extprob[xxxxx]-1)]-occhabitats[3][(extprob[xxxxx]-1)]*stress
+#                  
+#                                     if occhabitats[3][(extprob[xxxxx]-1)] == 0:
+#                                         
+#                                         occhabitats[1][(extprob[xxxxx]-1)] = -111
+#                                         occhabitats[2][(extprob[xxxxx]-1)] = -111
+                
+                        starthabitats = starthabitats[np.where(occhabitats[3][starthabitats-1] >= 20)] # starthabitats with less than 20 individuals are remove from starthabitats 
+                
+                        for xx in range(len(starthabitats)):
+                
+                            if starthabitats[xx] in habitats_shortpath_red[0] or starthabitats[xx] in habitats_shortpath_red[1]:
+                                conhabitats_ind = np.hstack(np.array([np.where(habitats_shortpath_red[0] == starthabitats[xx])[0].tolist(), np.where(habitats_shortpath_red[1] == starthabitats[xx])[0].tolist()]).flat).tolist()
+                                
                             else:
-                                
-                                if occhabitats[3][habitats_shortpath_red[1][y]-1] >= habitats_qual[occhabitats[0][habitats_shortpath_red[1][y]-1]-1]*100:
-                                                            
-                                    torem.append(y)
-            
-                        for yy in torem:
-                        
-                            conhabitats_ind.remove(yy)   
-            
-                        if conhabitats_ind == []:
-                        
-                            continue
-                        
-                        disind = DENdepEMI_RATE(M = m_max, N = occhabitats[3][starthabitats[xx]-1], K = habitats_qual[starthabitats[xx]-1]*100, s = s)
-                               
-                        occhabitats[3][starthabitats[xx]-1] = occhabitats[3][starthabitats[xx]-1] - disind
-                
-                        disind_part = percDISTRI_INDIdisper(COSTs = habitats_shortpath_red[2][conhabitats_ind], VAR = 'exponential')
-            
-                        for xxx in conhabitats_ind:
-                                            
-                            disind_perc = disind * disind_part[0]
-                            
-                            disind_part = disind_part[1:]
-                            
-            #                 yn = np.random.choice([1, 0], 1, p=[prob[xxx], 1-prob[xxx]])[0]
-                        
-            #                 if yn == 1:
-            
-                            disind_perc = disind_perc * prob[xxx]
-                                 
-                            if disind_perc == 0.0:
-                                
                                 continue
+                                
+                            torem = []
+                
+                            for y in conhabitats_ind:
+                                
+                                if habitats_shortpath_red[0][y] != starthabitats[xx]:
+                                
+                                    if occhabitats[3][habitats_shortpath_red[0][y]-1] >= habitats_qual[occhabitats[0][habitats_shortpath_red[0][y]-1]-1]*100:
                                         
-                            if occhabitats[0][habitats_shortpath_red[0][xxx]-1] != starthabitats[xx]:
+                                        torem.append(y)
                                 
-                                if occhabitats[1][habitats_shortpath_red[0][xxx]-1] in (-111, -999):
-                                
-                                    occhabitats[1][habitats_shortpath_red[0][xxx]-1] = x+1 # ts of first population of h
+                                else:
                                     
-                                if occhabitats[2][habitats_shortpath_red[0][xxx]-1] in (-111, -999):
-                                    
-                                    occhabitats[2][habitats_shortpath_red[0][xxx]-1] = starthabitats[xx] # h populated from which sh
-                                            
-                                if occhabitats[3][habitats_shortpath_red[0][xxx]-1] < (habitats_qual[occhabitats[0][habitats_shortpath_red[0][xxx]-1]-1]*100): # max pop size hq * 100        
-                                                                               
-                                    occhabitats[3][habitats_shortpath_red[0][xxx]-1] = occhabitats[3][habitats_shortpath_red[0][xxx]-1] + disind_perc # function to calculate number of individuals in h -> plus disind_perc
-                                    
-                                if  occhabitats[4][habitats_shortpath_red[0][xxx]-1] in (-111, -999) and occhabitats[3][habitats_shortpath_red[0][xxx]-1] >= 20.0:
-                                    occhabitats[4][habitats_shortpath_red[0][xxx]-1] = x+1
-                                    
-                                starthabitats, ind = np.unique(np.append(starthabitats,[occhabitats[0][habitats_shortpath_red[0][xxx]-1]]), return_index=True)
-                                starthabitats = starthabitats[np.argsort(ind)].astype(int)
-                                
-                            if occhabitats[0][habitats_shortpath_red[1][xxx]-1] != starthabitats[xx]:
+                                    if occhabitats[3][habitats_shortpath_red[1][y]-1] >= habitats_qual[occhabitats[0][habitats_shortpath_red[1][y]-1]-1]*100:
+                                                                
+                                        torem.append(y)
+                
+                            for yy in torem:
+                            
+                                conhabitats_ind.remove(yy)   
+                
+                            if conhabitats_ind == []:
+                            
+                                continue
+                            
+                            disind = DENdepEMI_RATE(M = m_max, N = occhabitats[3][starthabitats[xx]-1], K = habitats_qual[starthabitats[xx]-1]*100, s = s)
                                    
-                                if occhabitats[1][habitats_shortpath_red[1][xxx]-1] in (-111, -999):
-                                                            
-                                    occhabitats[1][habitats_shortpath_red[1][xxx]-1] = x+1 # ts of first population of h
+                            occhabitats[3][starthabitats[xx]-1] = occhabitats[3][starthabitats[xx]-1] - disind
+                    
+                            disind_part = percDISTRI_INDIdisper(COSTs = habitats_shortpath_red[2][conhabitats_ind], VAR = 'exponential')
+                
+                            for xxx in conhabitats_ind:
+                                                
+                                disind_perc = disind * disind_part[0]
                                 
-                                if occhabitats[2][habitats_shortpath_red[1][xxx]-1] in (-111, -999):
-            
-                                    occhabitats[2][habitats_shortpath_red[1][xxx]-1] = starthabitats[xx] # h populated from which sh
+                                disind_part = disind_part[1:]
                                 
-                                if occhabitats[3][habitats_shortpath_red[1][xxx]-1] < (habitats_qual[occhabitats[0][habitats_shortpath_red[1][xxx]-1]-1]*100): # max pop size hq * 100                
-            
-                                    occhabitats[3][habitats_shortpath_red[1][xxx]-1] = occhabitats[3][habitats_shortpath_red[1][xxx]-1] + disind_perc# function to calculate number of individuals in h -> plus disind_perc
-                              
-                                if  occhabitats[4][habitats_shortpath_red[1][xxx]-1] in (-111, -999) and occhabitats[3][habitats_shortpath_red[1][xxx]-1] >= 25:
-                                    occhabitats[4][habitats_shortpath_red[1][xxx]-1] = x+1
+                #                 yn = np.random.choice([1, 0], 1, p=[prob[xxx], 1-prob[xxx]])[0]
+                            
+                #                 if yn == 1:
+                
+                                disind_perc = disind_perc * prob[xxx]
+                                     
+                                if disind_perc == 0.0:
                                     
-                                starthabitats, ind = np.unique(np.append(starthabitats,[occhabitats[0][habitats_shortpath_red[1][xxx]-1]]), return_index=True)
-                                starthabitats = starthabitats[np.argsort(ind)].astype(int)
-            
-                occhabitats[3] = occhabitats[3] * 25.0 # conversion into mg biomass   
-                      
-                toins = str(np.array(occhabitats).T.tolist())[1:-1].replace('[','(').replace(']',')')
+                                    continue
+                                            
+                                if occhabitats[0][habitats_shortpath_red[0][xxx]-1] != starthabitats[xx]:
+                                    
+                                    if occhabitats[1][habitats_shortpath_red[0][xxx]-1] in (-111, -999):
+                                    
+                                        occhabitats[1][habitats_shortpath_red[0][xxx]-1] = x+1 # ts of first population of h
+                                        
+                                    if occhabitats[2][habitats_shortpath_red[0][xxx]-1] in (-111, -999):
+                                        
+                                        occhabitats[2][habitats_shortpath_red[0][xxx]-1] = starthabitats[xx] # h populated from which sh
+                                                
+                                    if occhabitats[3][habitats_shortpath_red[0][xxx]-1] < (habitats_qual[occhabitats[0][habitats_shortpath_red[0][xxx]-1]-1]*100): # max pop size hq * 100        
+                                                                                   
+                                        occhabitats[3][habitats_shortpath_red[0][xxx]-1] = occhabitats[3][habitats_shortpath_red[0][xxx]-1] + disind_perc # function to calculate number of individuals in h -> plus disind_perc
+                                        
+                                    if  occhabitats[4][habitats_shortpath_red[0][xxx]-1] in (-111, -999) and occhabitats[3][habitats_shortpath_red[0][xxx]-1] >= 20.0:
+                                        occhabitats[4][habitats_shortpath_red[0][xxx]-1] = x+1
+                                        
+                                    starthabitats, ind = np.unique(np.append(starthabitats,[occhabitats[0][habitats_shortpath_red[0][xxx]-1]]), return_index=True)
+                                    starthabitats = starthabitats[np.argsort(ind)].astype(int)
+                                    
+                                if occhabitats[0][habitats_shortpath_red[1][xxx]-1] != starthabitats[xx]:
+                                       
+                                    if occhabitats[1][habitats_shortpath_red[1][xxx]-1] in (-111, -999):
+                                                                
+                                        occhabitats[1][habitats_shortpath_red[1][xxx]-1] = x+1 # ts of first population of h
+                                    
+                                    if occhabitats[2][habitats_shortpath_red[1][xxx]-1] in (-111, -999):
                 
-            #####
+                                        occhabitats[2][habitats_shortpath_red[1][xxx]-1] = starthabitats[xx] # h populated from which sh
+                                    
+                                    if occhabitats[3][habitats_shortpath_red[1][xxx]-1] < (habitats_qual[occhabitats[0][habitats_shortpath_red[1][xxx]-1]-1]*100): # max pop size hq * 100                
                 
-                if xxxx == 0:
-                    cursor.execute("""INSERT INTO results.habitats_shortpath_red_nlmrc_testarea_10x10_"""+str(z)+"""_start_"""+str(zz)+""" (pts_id, firstcol_"""+str(xxxx+1)+"""_timestep, origin_"""+str(xxxx+1)+"""_timestep, biomass_"""+str(xxxx+1)+"""_timestep, first20_"""+str(xxxx+1)+"""_timestep) values """+toins+""";""") 
-            
-                else:
-                    cursor.execute("""UPDATE results.habitats_shortpath_red_nlmrc_testarea_10x10_"""+str(z)+"""_start_"""+str(zz)+""" SET firstcol_"""+str(xxxx+1)+"""_timestep = firstcol_"""+str(xxxx+1)+"""_timestep_arr, origin_"""+str(xxxx+1)+"""_timestep = origin_"""+str(xxxx+1)+"""_timestep_arr, biomass_"""+str(xxxx+1)+"""_timestep = biomass_"""+str(xxxx+1)+"""_timestep_arr, first20_"""+str(xxxx+1)+"""_timestep = first20_"""+str(xxxx+1)+"""_timestep_arr from (values """+toins+""") as c(pts_id_arr, firstcol_"""+str(xxxx+1)+"""_timestep_arr, origin_"""+str(xxxx+1)+"""_timestep_arr, biomass_"""+str(xxxx+1)+"""_timestep_arr, first20_"""+str(xxxx+1)+"""_timestep_arr) WHERE pts_id = pts_id_arr;""") 
-            
-            conn.commit()
-            
-            end = time.time()
-            print((end - start) / 60)
-    
-    # close communication with the database
-    cursor.close()
-    conn.close()
+                                        occhabitats[3][habitats_shortpath_red[1][xxx]-1] = occhabitats[3][habitats_shortpath_red[1][xxx]-1] + disind_perc# function to calculate number of individuals in h -> plus disind_perc
+                                  
+                                    if  occhabitats[4][habitats_shortpath_red[1][xxx]-1] in (-111, -999) and occhabitats[3][habitats_shortpath_red[1][xxx]-1] >= 25:
+                                        occhabitats[4][habitats_shortpath_red[1][xxx]-1] = x+1
+                                        
+                                    starthabitats, ind = np.unique(np.append(starthabitats,[occhabitats[0][habitats_shortpath_red[1][xxx]-1]]), return_index=True)
+                                    starthabitats = starthabitats[np.argsort(ind)].astype(int)
+                
+                    occhabitats[3] = occhabitats[3] * 25.0 # conversion into mg biomass   
+                          
+                    toins = str(np.array(occhabitats).T.tolist())[1:-1].replace('[','(').replace(']',')')
+                    
+                #####
+                    
+                    cursor.execute("""UPDATE results."""+str(inSP)+"""_"""+str(inHAB[-5:])+"""_"""+str(zz)+"""_start_"""+str(z)+""" SET firstcol_"""+str(xxxx+1)+"""_timestep = firstcol_"""+str(xxxx+1)+"""_timestep_arr, origin_"""+str(xxxx+1)+"""_timestep = origin_"""+str(xxxx+1)+"""_timestep_arr, biomass_"""+str(xxxx+1)+"""_timestep = biomass_"""+str(xxxx+1)+"""_timestep_arr, first20_"""+str(xxxx+1)+"""_timestep = first20_"""+str(xxxx+1)+"""_timestep_arr from (values """+toins+""") as c(pts_id_arr, firstcol_"""+str(xxxx+1)+"""_timestep_arr, origin_"""+str(xxxx+1)+"""_timestep_arr, biomass_"""+str(xxxx+1)+"""_timestep_arr, first20_"""+str(xxxx+1)+"""_timestep_arr) WHERE pts_id = pts_id_arr;""") 
+                
+                conn.commit()
+                
+                end = time.time()
+                print((end - start) / 60)
+        
+        # close communication with the database
+        cursor.close()
+        conn.close()
 
-
-def f(x):
-
+#####
 
 def main():
 
-    inHABs = ['pts_habitat_red_10x10', 'pts_habitat_red_30x30', 'pts_habitat_red_50x50']
+    inSPs = ['habitats_shortpath_red_nlmr_testarea', 'habitats_shortpath_red_nlmrc_testarea', 'habitats_shortpath_red_nlmre_testarea']
 
-    pool = multiprocessing.Pool((processes=3))
-    pool.map(dispersal_MODEL, inHABs)
+    pool = multiprocessing.Pool(processes=3)
+    pool.map(dispersal_MODEL, inSPs)
 
     pool.close()
     pool.join()
