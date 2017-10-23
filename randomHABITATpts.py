@@ -27,19 +27,6 @@ cursor = conn.cursor()
 # 
 # tables = cursor.fetchall()
 
-cursor.execute("SELECT ids, ST_AsText(geom) FROM stream_network.pts_habitat_red_30x30;")
-
-randHAPTS =  cursor.fetchall()
-
-randHAPTS = [list(x) for x in randHAPTS]
-
-randHAPTS = [[int(x[0]),[float(x[1].split(' ',1)[0][6:]), float(x[1].split(' ',1)[1][:-1])]] for x in randHAPTS] 
-
-randHAPTS_IDS = [int(x[0]) for x in randHAPTS] 
-randHAPTS_X = [float(x[1][0]) for x in randHAPTS] 
-randHAPTS_Y = [float(x[1][1]) for x in randHAPTS] 
-randHAPTS_XY = [x[1] for x in randHAPTS] 
-
 def randomSAMPLE(randHAPTS_IDS, maxHABs):
     
     random_SAMPLE = random.sample(randHAPTS_IDS, maxHABs)
@@ -47,30 +34,54 @@ def randomSAMPLE(randHAPTS_IDS, maxHABs):
 
 numRandPTs = 10
 
-for x in range(numRandPTs):
-    
-    print(x)
+cursor.execute("""SELECT ids FROM stream_network.rast_10x10""")
  
-    PTs_rSa = randomSAMPLE(randHAPTS_IDS, int(len(randHAPTS_IDS)*0.1+0.5))
-  
-    cursor.execute("""CREATE TABLE stream_network.pts_habitat_red_50x50_start_"""+str(x)+""" AS SELECT * FROM stream_network.pts_habitat_red_30x30 WHERE ids IN ("""+str(PTs_rSa)[1:-1]+""");""")
-    
-    cursor.execute("""ALTER TABLE stream_network.pts_habitat_red_50x50_start_"""+str(x)+""" RENAME COLUMN ids TO ids_org;""")
-    
-    cursor.execute("""ALTER TABLE stream_network.pts_habitat_red_50x50_start_"""+str(x)+""" ADD column ids bigserial;""")
+ids = cursor.fetchall()
+ids = [i[0] for i in ids]
+ 
+for xx in ids:
 
-    conn.commit()
+    cursor.execute("""SELECT ids, ST_AsText(geom) FROM stream_network_10x10.pts_habitat_red_50x50_"""+str(xx)+""";""")
+    
+    randHAPTS =  cursor.fetchall()
+    
+    randHAPTS = [list(x) for x in randHAPTS]
+    
+    randHAPTS = [[int(x[0]),[float(x[1].split(' ',1)[0][6:]), float(x[1].split(' ',1)[1][:-1])]] for x in randHAPTS] 
+    
+    randHAPTS_IDS = [int(x[0]) for x in randHAPTS] 
+    randHAPTS_X = [float(x[1][0]) for x in randHAPTS] 
+    randHAPTS_Y = [float(x[1][1]) for x in randHAPTS] 
+    randHAPTS_XY = [x[1] for x in randHAPTS] 
+
+    for x in range(numRandPTs):
+        
+        print(x)
+     
+        PTs_rSa = randomSAMPLE(randHAPTS_IDS, int(len(randHAPTS_IDS)*0.1+0.5))
       
-    cursor.execute("""SELECT ids FROM stream_network.pts_habitat_red_50x50_start_"""+str(x)+""";""")
- 
-    ids = cursor.fetchall()
-    ids = [int(i[0]) for i in ids]
+        cursor.execute("""CREATE TABLE stream_network_10x10.pts_habitat_red_50x50_"""+str(xx)+"""_start_"""+str(x)+""" AS SELECT * FROM stream_network_10x10.pts_habitat_red_50x50_"""+str(xx)+""" WHERE ids IN ("""+str(PTs_rSa)[1:-1]+""");""")
+        
+        cursor.execute("""ALTER TABLE stream_network_10x10.pts_habitat_red_50x50_"""+str(xx)+"""_start_"""+str(x)+""" RENAME COLUMN ids TO ids_org;""")
+        
+        cursor.execute("""ALTER TABLE stream_network_10x10.pts_habitat_red_50x50_"""+str(xx)+"""_start_"""+str(x)+""" ADD column ids bigserial;""")
+    
+        conn.commit()
+          
+        cursor.execute("""SELECT ids_org FROM stream_network_10x10.pts_habitat_red_50x50_"""+str(xx)+"""_start_"""+str(x)+""";""")
      
-    print(len(ids))
-     
-    cursor.execute("""CREATE TABLE stream_network.dist_pts_2500_50x50_start_"""+str(x)+""" AS SELECT * FROM stream_network.dist_pts_2500_30x30 WHERE start IN ("""+str(ids)[1:-1]+""") AND aim IN ("""+str(ids)[1:-1]+""");""")
+        ids = cursor.fetchall()
+        ids = [int(i[0]) for i in ids]
+         
+        print(len(ids))
+         
+        cursor.execute("""CREATE TABLE stream_network_10x10.dist_pts_2500_50x50_"""+(str(xx))+"""_start_"""+str(x)+""" AS SELECT * FROM stream_network_10x10.dist_pts_2500_50x50_"""+(str(xx))+""" WHERE start IN ("""+str(ids)[1:-1]+""") AND aim IN ("""+str(ids)[1:-1]+""");""")
+    
+        cursor.execute("""UPDATE stream_network_10x10.dist_pts_2500_50x50_"""+(str(xx))+"""_start_"""+str(x)+""" SET start = (SELECT stream_network_10x10.pts_habitat_red_50x50_"""+str(xx)+"""_start_"""+str(x)+""".ids FROM stream_network_10x10.pts_habitat_red_50x50_"""+str(xx)+"""_start_"""+str(x)+""" WHERE stream_network_10x10.dist_pts_2500_50x50_"""+(str(xx))+"""_start_"""+str(x)+""".start = stream_network_10x10.pts_habitat_red_50x50_"""+str(xx)+"""_start_"""+str(x)+""".ids_org);""")
 
-    conn.commit()
+        cursor.execute("""UPDATE stream_network_10x10.dist_pts_2500_50x50_"""+(str(xx))+"""_start_"""+str(x)+""" SET aim = (SELECT stream_network_10x10.pts_habitat_red_50x50_"""+str(xx)+"""_start_"""+str(x)+""".ids FROM stream_network_10x10.pts_habitat_red_50x50_"""+str(xx)+"""_start_"""+str(x)+""" WHERE stream_network_10x10.dist_pts_2500_50x50_"""+(str(xx))+"""_start_"""+str(x)+""".aim = stream_network_10x10.pts_habitat_red_50x50_"""+str(xx)+"""_start_"""+str(x)+""".ids_org);""")
+    
+        conn.commit()
 
 cursor.close()
 conn.close()

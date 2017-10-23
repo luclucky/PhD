@@ -162,7 +162,7 @@ habitats_shortpath_red = np.array(habitats_shortpath_red).T
 # habitats_qual = np.load('/home/lucas/PhD/STRESSOR/TEST_DATA/habitatsQuality.npy')
 # habitats_qual[np.where(habitats_qual < 0.25)] = 0.25 # min HQ set to 0.25
 
-cursor.execute("""SELECT hq FROM calc_hh.habitats_qual;""")
+cursor.execute("""SELECT hq FROM calc_hh.habitats_qual_2;""")
 habitats_qual = cursor.fetchall()
 habitats_qual = np.array([i[0] for i in habitats_qual])
 

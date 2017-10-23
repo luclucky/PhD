@@ -159,7 +159,6 @@ extPROB_perRUN = 0.05
     
 #####
 
-
 def dispersal_MODEL(inSP):
     
     inHABs = ['pts_habitat_red_10x10', 'pts_habitat_red_30x30', 'pts_habitat_red_50x50']
@@ -182,6 +181,10 @@ def dispersal_MODEL(inSP):
             xy_pts = [[i[0], float(i[1][0]), float(i[1][2])] for i in xy_pts]
             xy_pts.sort()
             
+            cursor.execute("""SELECT * FROM res_SHequal."""+str(inHAB)+"""_starthabitas;""")
+            list_SH = cursor.fetchall()
+            list_SH = np.array(list_SH).T
+
             cursor.execute("""SELECT rid, ST_MetaData(rast) AS md FROM stream_network.rlp_stream_rast_testarea_"""+str(inHAB[-5:])+""";""")
             raster_MD = cursor.fetchall()
             raster_MD = [float(x) for x in raster_MD[0][1][1:-1].split(',')]
@@ -203,8 +206,8 @@ def dispersal_MODEL(inSP):
                 
                 habitats_qual = np.array(len(xy_pts) * [0.625])
                 
-                cursor.execute("""DROP TABLE IF EXISTS results."""+str(inSP)+"""_"""+str(inHAB[-5:])+"""_"""+str(zz)+"""_start_"""+str(z)+""";""")
-                cursor.execute("""CREATE TABLE results."""+str(inSP)+"""_"""+str(inHAB[-5:])+"""_"""+str(zz)+"""_start_"""+str(z)+""" (pts_id BIGINT, geom GEOMETRY, hq FLOAT);""")
+                cursor.execute("""DROP TABLE IF EXISTS res_SHequal."""+str(inSP)+"""_"""+str(inHAB[-5:])+"""_"""+str(zz)+"""_start_"""+str(z)+""";""")
+                cursor.execute("""CREATE TABLE res_SHequal."""+str(inSP)+"""_"""+str(inHAB[-5:])+"""_"""+str(zz)+"""_start_"""+str(z)+""" (pts_id BIGINT, geom GEOMETRY, hq FLOAT);""")
                 
                 toINS_pts = np.array(xy_pts)
                 toINS_pts = toINS_pts.tolist()
@@ -216,7 +219,7 @@ def dispersal_MODEL(inSP):
                 
                 toINS_pts = str(np.array(toINS_pts).tolist())[1:-1].replace('[','(').replace(']',')').replace('\'','')
                 
-                cursor.execute("""INSERT INTO results."""+str(inSP)+"""_"""+str(inHAB[-5:])+"""_"""+str(zz)+"""_start_"""+str(z)+""" (pts_id, geom, hq) values """+toINS_pts+""";""")  
+                cursor.execute("""INSERT INTO res_SHequal."""+str(inSP)+"""_"""+str(inHAB[-5:])+"""_"""+str(zz)+"""_start_"""+str(z)+""" (pts_id, geom, hq) values """+toINS_pts+""";""")  
                 
                 conn.commit()
                 
@@ -224,9 +227,11 @@ def dispersal_MODEL(inSP):
                     
                     print(str(inSP)+'_'+str(inHAB[-5:])+'_'+str(zz)+'_start_'+str(z) + ': run ' + str(xxxx))
                         
-                    cursor.execute("""ALTER TABLE results."""+str(inSP)+"""_"""+str(inHAB[-5:])+"""_"""+str(zz)+"""_start_"""+str(z)+""" ADD firstcol_"""+str(xxxx+1)+"""_timestep bigint, ADD origin_"""+str(xxxx+1)+"""_timestep bigint, ADD biomass_"""+str(xxxx+1)+"""_timestep float, ADD first20_"""+str(xxxx+1)+"""_timestep bigint;""")
+                    cursor.execute("""ALTER TABLE res_SHequal."""+str(inSP)+"""_"""+str(inHAB[-5:])+"""_"""+str(zz)+"""_start_"""+str(z)+""" ADD firstcol_"""+str(xxxx+1)+"""_timestep bigint, ADD origin_"""+str(xxxx+1)+"""_timestep bigint, ADD biomass_"""+str(xxxx+1)+"""_timestep float, ADD first20_"""+str(xxxx+1)+"""_timestep bigint;""")
                         
-                    starthabitats = np.random.choice(np.unique([habitats_shortpath_red[0], habitats_shortpath_red[1]]), int(len(xy_pts)*0.1+0.5)).astype(int) # number of occupied habitats first run
+#                     starthabitats = np.random.choice(np.unique([habitats_shortpath_red[0], habitats_shortpath_red[1]]), int(len(xy_pts)*0.1+0.5)).astype(int) # number of occupied habitats first run
+                    
+                    starthabitats = list_SH[xxxx]
                     
                     starthabitats_hq = habitats_qual[starthabitats-1]
                 
@@ -403,7 +408,7 @@ def dispersal_MODEL(inSP):
                     
                 #####
                     
-                    cursor.execute("""UPDATE results."""+str(inSP)+"""_"""+str(inHAB[-5:])+"""_"""+str(zz)+"""_start_"""+str(z)+""" SET firstcol_"""+str(xxxx+1)+"""_timestep = firstcol_"""+str(xxxx+1)+"""_timestep_arr, origin_"""+str(xxxx+1)+"""_timestep = origin_"""+str(xxxx+1)+"""_timestep_arr, biomass_"""+str(xxxx+1)+"""_timestep = biomass_"""+str(xxxx+1)+"""_timestep_arr, first20_"""+str(xxxx+1)+"""_timestep = first20_"""+str(xxxx+1)+"""_timestep_arr from (values """+toins+""") as c(pts_id_arr, firstcol_"""+str(xxxx+1)+"""_timestep_arr, origin_"""+str(xxxx+1)+"""_timestep_arr, biomass_"""+str(xxxx+1)+"""_timestep_arr, first20_"""+str(xxxx+1)+"""_timestep_arr) WHERE pts_id = pts_id_arr;""") 
+                    cursor.execute("""UPDATE res_SHequal."""+str(inSP)+"""_"""+str(inHAB[-5:])+"""_"""+str(zz)+"""_start_"""+str(z)+""" SET firstcol_"""+str(xxxx+1)+"""_timestep = firstcol_"""+str(xxxx+1)+"""_timestep_arr, origin_"""+str(xxxx+1)+"""_timestep = origin_"""+str(xxxx+1)+"""_timestep_arr, biomass_"""+str(xxxx+1)+"""_timestep = biomass_"""+str(xxxx+1)+"""_timestep_arr, first20_"""+str(xxxx+1)+"""_timestep = first20_"""+str(xxxx+1)+"""_timestep_arr from (values """+toins+""") as c(pts_id_arr, firstcol_"""+str(xxxx+1)+"""_timestep_arr, origin_"""+str(xxxx+1)+"""_timestep_arr, biomass_"""+str(xxxx+1)+"""_timestep_arr, first20_"""+str(xxxx+1)+"""_timestep_arr) WHERE pts_id = pts_id_arr;""") 
                 
                 conn.commit()
                 
