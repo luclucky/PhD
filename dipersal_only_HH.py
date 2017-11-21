@@ -170,7 +170,7 @@ habitats_qual = np.array([i[0] for i in habitats_qual])
 
 # MODEL PARAMETERS 2
 
-timesteps = 100
+timesteps = 250
 
 stresslevel = [0.025, 0.05, 0.075, 0.1] # intensity of stress events
 
@@ -200,18 +200,23 @@ cursor.execute("""SELECT column_name FROM information_schema.columns WHERE table
 numSH = cursor.fetchall()
 numSH = [i[0] for i in numSH]
 
-cursor.execute("""DROP TABLE IF EXISTS result_hh.sh_200;""")
-cursor.execute("""CREATE table result_hh.sh_200 (pts_id BIGSERIAL);""")
+numSH = numSH[:51]
+
+cursor.execute("""DROP TABLE IF EXISTS result_hh.sh_50;""")
+cursor.execute("""CREATE table result_hh.sh_50 (pts_id BIGSERIAL);""")
+
+cursor.execute("""DROP TABLE IF EXISTS result_hh.runtime_50;""")
+cursor.execute("""CREATE table result_hh.runtime_50 (run BIGSERIAL, time FLOAT);""")
 
 conn.commit()
 
 for xxxx in range(len(numSH[1:])):
     
-    start = time.time()
+    start = time.clock()
     
     print('run ' + str(xxxx))
         
-    cursor.execute("""ALTER TABLE result_hh.sh_200 add firstcol_"""+str(xxxx+1)+""" bigint, add origin_"""+str(xxxx+1)+""" bigint, add indiv_"""+str(xxxx+1)+""" float, add first20_"""+str(xxxx+1)+""" bigint;""")
+    cursor.execute("""ALTER TABLE result_hh.sh_50 add firstcol_"""+str(xxxx+1)+""" bigint, add origin_"""+str(xxxx+1)+""" bigint, add indiv_"""+str(xxxx+1)+""" float, add first20_"""+str(xxxx+1)+""" bigint;""")
     
 #     starthabitats = np.random.choice(np.unique([habitats_shortpath_red[0], habitats_shortpath_red[1]]), int(len(xy_pts)*0.1+0.5)).astype(int) # number of occupied habitats first run
     
@@ -351,15 +356,19 @@ for xxxx in range(len(numSH[1:])):
 #####
     
     if xxxx == 0:
-        cursor.execute("INSERT INTO result_hh.sh_200 (pts_id, firstcol_"+str(xxxx+1)+", origin_"+str(xxxx+1)+", indiv_"+str(xxxx+1)+", first20_"+str(xxxx+1)+") values "+toins+";") 
+        cursor.execute("INSERT INTO result_hh.sh_50 (pts_id, firstcol_"+str(xxxx+1)+", origin_"+str(xxxx+1)+", indiv_"+str(xxxx+1)+", first20_"+str(xxxx+1)+") values "+toins+";") 
 
     else:
-        cursor.execute("UPDATE result_hh.sh_200 SET firstcol_"+str(xxxx+1)+" = firstcol_"+str(xxxx+1)+"_arr, origin_"+str(xxxx+1)+" = origin_"+str(xxxx+1)+"_arr, indiv_"+str(xxxx+1)+" = indiv_"+str(xxxx+1)+"_arr, first20_"+str(xxxx+1)+" = first20_"+str(xxxx+1)+"_arr from (values "+toins+") as c(pts_id_arr, firstcol_"+str(xxxx+1)+"_arr, origin_"+str(xxxx+1)+"_arr, indiv_"+str(xxxx+1)+"_arr, first20_"+str(xxxx+1)+"_arr) WHERE pts_id = pts_id_arr;") 
+        cursor.execute("UPDATE result_hh.sh_50 SET firstcol_"+str(xxxx+1)+" = firstcol_"+str(xxxx+1)+"_arr, origin_"+str(xxxx+1)+" = origin_"+str(xxxx+1)+"_arr, indiv_"+str(xxxx+1)+" = indiv_"+str(xxxx+1)+"_arr, first20_"+str(xxxx+1)+" = first20_"+str(xxxx+1)+"_arr from (values "+toins+") as c(pts_id_arr, firstcol_"+str(xxxx+1)+"_arr, origin_"+str(xxxx+1)+"_arr, indiv_"+str(xxxx+1)+"_arr, first20_"+str(xxxx+1)+"_arr) WHERE pts_id = pts_id_arr;") 
 
     conn.commit()
 
-    end = time.time()
+    end = time.clock()
     print(end - start)
+    
+    cursor.execute("INSERT INTO result_hh.runtime_50 VALUES ("+str(xxxx)+","+str(end - start)+");")
+    
+    conn.commit()
 
 # close communication with the database
 cursor.close()
