@@ -115,18 +115,18 @@ def simSTRESS_VALUE(HQ, SL):
 
 def randomEXT(extPROB_perRUN, occhabitats):
     
-        currPROB = len(occhabitats[0][np.where(occhabitats[3] > 0.0)].astype(int)) * extPROB_perRUN
-       
-        currPROB % 1
-        
-        currPROB_adj = np.random.choice([np.ceil(currPROB).astype(int), np.floor(currPROB).astype(int)], 1, p = [currPROB % 1, 1 - currPROB % 1])
+    currPROB = len(occhabitats[0][np.where(occhabitats[3] > 0.0)].astype(int)) * extPROB_perRUN
+   
+    currPROB % 1
+    
+    currPROB_adj = np.random.choice([np.ceil(currPROB).astype(int), np.floor(currPROB).astype(int)], 1, p = [currPROB % 1, 1 - currPROB % 1])
 
-        extLIST = np.random.choice(occhabitats[0][np.where(occhabitats[3] > 0.0)].astype(int), currPROB_adj)
-        
+    extLIST = np.random.choice(occhabitats[0][np.where(occhabitats[3] > 0.0)].astype(int), currPROB_adj)
+    
 #         occhabitats[1][extLIST-1] = -111
 #         occhabitats[2][extLIST-1] = -111
-        occhabitats[3][extLIST-1] = 0
-        occhabitats[4][extLIST-1] = -111
+    occhabitats[3][extLIST-1] = 0
+    occhabitats[4][extLIST-1] = -111
 
 #####
 
