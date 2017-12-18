@@ -1,0 +1,40 @@
+!SESSION 2017-12-18 10:47:15.330 -----------------------------------------------
+eclipse.buildId=4.5.0.I20150603-2000
+java.version=1.8.0_151
+java.vendor=Oracle Corporation
+BootLoader constants: OS=linux, ARCH=x86_64, WS=gtk, NL=de_DE
+Framework arguments:  -product org.eclipse.epp.package.committers.product
+Command-line arguments:  -os linux -ws gtk -arch x86_64 -product org.eclipse.epp.package.committers.product
+
+!ENTRY org.eclipse.recommenders.snipmatch.rcp 4 0 2017-12-18 10:47:16.006
+!MESSAGE FrameworkEvent ERROR
+!STACK 0
+org.osgi.framework.BundleException: Could not resolve module: org.eclipse.recommenders.snipmatch.rcp [374]
+  Bundle was not resolved because of a uses contraint violation.
+  org.osgi.service.resolver.ResolutionException: Uses constraint violation. Unable to resolve resource org.eclipse.recommenders.snipmatch.rcp [osgi.identity; osgi.identity="org.eclipse.recommenders.snipmatch.rcp"; type="osgi.bundle"; version:Version="2.2.0.v20150609-1848"; singleton:="true"] because it is exposed to package 'org.eclipse.jgit.transport' from resources org.eclipse.jgit [osgi.identity; osgi.identity="org.eclipse.jgit"; type="osgi.bundle"; version:Version="4.9.2.201712150930-r"] and org.eclipse.jgit [osgi.identity; osgi.identity="org.eclipse.jgit"; type="osgi.bundle"; version:Version="4.0.0.201506090130-r"] via two dependency chains.
+
+Chain 1:
+  org.eclipse.recommenders.snipmatch.rcp [osgi.identity; osgi.identity="org.eclipse.recommenders.snipmatch.rcp"; type="osgi.bundle"; version:Version="2.2.0.v20150609-1848"; singleton:="true"]
+    require: (osgi.wiring.bundle=org.eclipse.jgit)
+     |
+    provide: osgi.wiring.bundle: org.eclipse.jgit
+  org.eclipse.jgit [osgi.identity; osgi.identity="org.eclipse.jgit"; type="osgi.bundle"; version:Version="4.9.2.201712150930-r"]
+
+Chain 2:
+  org.eclipse.recommenders.snipmatch.rcp [osgi.identity; osgi.identity="org.eclipse.recommenders.snipmatch.rcp"; type="osgi.bundle"; version:Version="2.2.0.v20150609-1848"; singleton:="true"]
+    require: (&(osgi.wiring.bundle=org.eclipse.recommenders.snipmatch)(&(bundle-version>=2.2.0)(!(bundle-version>=2.2.1))))
+     |
+    provide: osgi.wiring.bundle; bundle-version:Version="2.2.0.v20150609-1848"; osgi.wiring.bundle="org.eclipse.recommenders.snipmatch"; singleton:="true"
+  org.eclipse.recommenders.snipmatch [osgi.identity; osgi.identity="org.eclipse.recommenders.snipmatch"; type="osgi.bundle"; version:Version="2.2.0.v20150609-1848"; singleton:="true"]
+    require: (osgi.wiring.bundle=org.eclipse.jgit)
+     |
+    provide: osgi.wiring.bundle: org.eclipse.jgit
+  org.eclipse.jgit [osgi.identity; osgi.identity="org.eclipse.jgit"; type="osgi.bundle"; version:Version="4.0.0.201506090130-r"]
+	at org.eclipse.osgi.container.Module.start(Module.java:434)
+	at org.eclipse.osgi.container.ModuleContainer$ContainerStartLevel.incStartLevel(ModuleContainer.java:1582)
+	at org.eclipse.osgi.container.ModuleContainer$ContainerStartLevel.incStartLevel(ModuleContainer.java:1561)
+	at org.eclipse.osgi.container.ModuleContainer$ContainerStartLevel.doContainerStartLevel(ModuleContainer.java:1533)
+	at org.eclipse.osgi.container.ModuleContainer$ContainerStartLevel.dispatchEvent(ModuleContainer.java:1476)
+	at org.eclipse.osgi.container.ModuleContainer$ContainerStartLevel.dispatchEvent(ModuleContainer.java:1)
+	at org.eclipse.osgi.framework.eventmgr.EventManager.dispatchEvent(EventManager.java:230)
+	at org.eclipse.osgi.framework.eventmgr.EventManager$EventThread.run(EventManager.java:340)
