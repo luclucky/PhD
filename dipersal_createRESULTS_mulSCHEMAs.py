@@ -159,13 +159,13 @@ extPROB_perRUN = 0.05
     
 #####
 
-def dispersal_MODEL(inSCHEMAs, inSP):
+def dispersal_MODEL(inPARA):
     
     inHABs = []
 
     for x in range(25):
 
-        inHABs.append('pts_habitat_red_50x50_'+str(x+1))
+        inHABs.append('pts_habitat_red_'+str(x+1))
 
     for inHAB in inHABs:
             
@@ -197,7 +197,7 @@ def dispersal_MODEL(inSCHEMAs, inSP):
                 
                 start = time.time()
         
-                cursor.execute("""SELECT start, aim, costs FROM stream_network_025025050."""+str(inSP)+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[22:])+"""_start_"""+str(z)+""";""")
+                cursor.execute("""SELECT start, aim, costs FROM """+str(inPARA[1])+"""."""+str(inPARA[0])+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[16:])+"""_start_"""+str(z)+""";""")
                 habitats_shortpath_red = cursor.fetchall()
                 habitats_shortpath_red = [i for i in habitats_shortpath_red if i[2] <= maxCo]
                 habitats_shortpath_red = np.array(habitats_shortpath_red).T
@@ -210,8 +210,8 @@ def dispersal_MODEL(inSCHEMAs, inSP):
                 
                 habitats_qual = np.array(len(xy_pts) * [0.625])
                 
-                cursor.execute("""DROP TABLE IF EXISTS res_shequal_50x50."""+str(inSP)+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[22:])+"""_start_"""+str(z)+""";""")
-                cursor.execute("""CREATE TABLE res_shequal_50x50."""+str(inSP)+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[22:])+"""_start_"""+str(z)+""" (pts_id BIGINT, geom GEOMETRY, hq FLOAT);""")
+                cursor.execute("""DROP TABLE IF EXISTS """+str(inPARA[2])+"""."""+str(inPARA[0])+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[16:])+"""_start_"""+str(z)+""";""")
+                cursor.execute("""CREATE TABLE """+str(inPARA[2])+"""."""+str(inPARA[0])+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[16:])+"""_start_"""+str(z)+""" (pts_id BIGINT, geom GEOMETRY, hq FLOAT);""")
                 
                 toINS_pts = np.array(xy_pts)
                 toINS_pts = toINS_pts.tolist()
@@ -223,15 +223,15 @@ def dispersal_MODEL(inSCHEMAs, inSP):
                 
                 toINS_pts = str(np.array(toINS_pts).tolist())[1:-1].replace('[','(').replace(']',')').replace('\'','')
                 
-                cursor.execute("""INSERT INTO res_shequal_50x50."""+str(inSP)+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[22:])+"""_start_"""+str(z)+""" (pts_id, geom, hq) values """+toINS_pts+""";""")  
+                cursor.execute("""INSERT INTO """+str(inPARA[2])+"""."""+str(inPARA[0])+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[16:])+"""_start_"""+str(z)+""" (pts_id, geom, hq) values """+toINS_pts+""";""")  
                 
                 conn.commit()
                 
                 for xxxx in range(10):
                     
-                    print(str(inSP)+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[22:])+"""_start_"""+str(z)+ ': run ' + str(xxxx))
+                    print(str(inPARA[1])+""": """+str(inPARA[0])+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[16:])+"""_start_"""+str(z)+ ': run ' + str(xxxx))
                         
-                    cursor.execute("""ALTER TABLE res_shequal_50x50."""+str(inSP)+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[22:])+"""_start_"""+str(z)+""" ADD firstcol_"""+str(xxxx+1)+"""_timestep bigint, ADD origin_"""+str(xxxx+1)+"""_timestep bigint, ADD biomass_"""+str(xxxx+1)+"""_timestep float, ADD first20_"""+str(xxxx+1)+"""_timestep bigint;""")
+                    cursor.execute("""ALTER TABLE """+str(inPARA[2])+"""."""+str(inPARA[0])+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[16:])+"""_start_"""+str(z)+""" ADD firstcol_"""+str(xxxx+1)+"""_timestep bigint, ADD origin_"""+str(xxxx+1)+"""_timestep bigint, ADD biomass_"""+str(xxxx+1)+"""_timestep float, ADD first20_"""+str(xxxx+1)+"""_timestep bigint;""")
                         
 #                     starthabitats = np.random.choice(np.unique([habitats_shortpath_red[0], habitats_shortpath_red[1]]), int(len(xy_pts)*0.1+0.5)).astype(int) # number of occupied habitats first run
                     
@@ -412,7 +412,7 @@ def dispersal_MODEL(inSCHEMAs, inSP):
                     
                 #####
                     
-                    cursor.execute("""UPDATE res_shequal_50x50."""+str(inSP)+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[22:])+"""_start_"""+str(z)+""" SET firstcol_"""+str(xxxx+1)+"""_timestep = firstcol_"""+str(xxxx+1)+"""_timestep_arr, origin_"""+str(xxxx+1)+"""_timestep = origin_"""+str(xxxx+1)+"""_timestep_arr, biomass_"""+str(xxxx+1)+"""_timestep = biomass_"""+str(xxxx+1)+"""_timestep_arr, first20_"""+str(xxxx+1)+"""_timestep = first20_"""+str(xxxx+1)+"""_timestep_arr from (values """+toins+""") as c(pts_id_arr, firstcol_"""+str(xxxx+1)+"""_timestep_arr, origin_"""+str(xxxx+1)+"""_timestep_arr, biomass_"""+str(xxxx+1)+"""_timestep_arr, first20_"""+str(xxxx+1)+"""_timestep_arr) WHERE pts_id = pts_id_arr;""") 
+                    cursor.execute("""UPDATE """+str(inPARA[2])+"""."""+str(inPARA[0])+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[16:])+"""_start_"""+str(z)+""" SET firstcol_"""+str(xxxx+1)+"""_timestep = firstcol_"""+str(xxxx+1)+"""_timestep_arr, origin_"""+str(xxxx+1)+"""_timestep = origin_"""+str(xxxx+1)+"""_timestep_arr, biomass_"""+str(xxxx+1)+"""_timestep = biomass_"""+str(xxxx+1)+"""_timestep_arr, first20_"""+str(xxxx+1)+"""_timestep = first20_"""+str(xxxx+1)+"""_timestep_arr from (values """+toins+""") as c(pts_id_arr, firstcol_"""+str(xxxx+1)+"""_timestep_arr, origin_"""+str(xxxx+1)+"""_timestep_arr, biomass_"""+str(xxxx+1)+"""_timestep_arr, first20_"""+str(xxxx+1)+"""_timestep_arr) WHERE pts_id = pts_id_arr;""") 
                 
                 conn.commit()
                 
@@ -428,11 +428,20 @@ def dispersal_MODEL(inSCHEMAs, inSP):
 def main():
 
     inSCHEMAs = ['stream_network_025025050', 'stream_network_025050025', 'stream_network_050025025', 'stream_network_033033033']
+    outSCHEMAs = ['sn_025025050_results', 'sn_025050025_results', 'sn_050025025_results', 'sn_033033033_results']
 
-    inSPs = ['habitats_shortpath_red_nlmr_testarea', 'habitats_shortpath_red_nlmrc_testarea', 'habitats_shortpath_red_nlmre_testarea']
-
+    inNLMs = ['habitats_shortpath_red_nlmr_testarea', 'habitats_shortpath_red_nlmrc_testarea', 'habitats_shortpath_red_nlmre_testarea']
+    
+    inPARAs = []
+    
+    for a in range(len(inNLMs)):
+        
+        for aa in range(len(inSCHEMAs)):
+        
+            inPARAs.append([inNLMs[a],inSCHEMAs[aa],outSCHEMAs[aa]])
+        
     pool = multiprocessing.Pool(processes=12)
-    pool.map(dispersal_MODEL, inSPs)
+    pool.map(dispersal_MODEL, inPARAs)
 
     pool.close()
     pool.join()
