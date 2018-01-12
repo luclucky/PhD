@@ -42,27 +42,27 @@ for x in ids:
 
     for xx in range(10):
     
-        cursor.execute("""CREATE TABLE stream_network_025025050.nlmr_testarea_50x50_"""+str(xx)+"""_"""+str(x)+""" AS SELECT ST_Clip(rast, (ST_SetSRID(ST_MakeEnvelope("""+str(ext)[1:-1]+"""), 25832))) AS rast FROM stream_network_025025050.nlmr_testarea_50x50_"""+str(xx)+"""_resamp;""")
+        cursor.execute("""CREATE TABLE stream_network_625125025.nlmr_testarea_50x50_"""+str(xx)+"""_"""+str(x)+""" AS SELECT ST_Clip(rast, (ST_SetSRID(ST_MakeEnvelope("""+str(ext)[1:-1]+"""), 25832))) AS rast FROM stream_network_625125025.nlmr_testarea_50x50_"""+str(xx)+"""_resamp;""")
     
-        cursor.execute("""select addrasterconstraints('stream_network_025025050'::name, 'nlmr_testarea_50x50_"""+str(xx)+"""_"""+str(x)+"""'::name, 'rast'::name,'regular_blocking', 'blocksize');""")
+        cursor.execute("""select addrasterconstraints('stream_network_625125025'::name, 'nlmr_testarea_50x50_"""+str(xx)+"""_"""+str(x)+"""'::name, 'rast'::name,'regular_blocking', 'blocksize');""")
 
-        cursor.execute("""UPDATE stream_network_025025050.nlmr_testarea_50x50_"""+str(xx)+"""_"""+str(x)+""" SET rast = ST_SetSRID(rast,25832);""")
+        cursor.execute("""UPDATE stream_network_625125025.nlmr_testarea_50x50_"""+str(xx)+"""_"""+str(x)+""" SET rast = ST_SetSRID(rast,25832);""")
 
 #####
 
-        cursor.execute("""CREATE TABLE stream_network_025025050.nlmrc_testarea_50x50_"""+str(xx)+"""_"""+str(x)+""" AS SELECT ST_Clip(rast, (ST_SetSRID(ST_MakeEnvelope("""+str(ext)[1:-1]+"""), 25832))) AS rast FROM stream_network_025025050.nlmrc_testarea_50x50_"""+str(xx)+"""_resamp;""")
+        cursor.execute("""CREATE TABLE stream_network_625125025.nlmrc_testarea_50x50_"""+str(xx)+"""_"""+str(x)+""" AS SELECT ST_Clip(rast, (ST_SetSRID(ST_MakeEnvelope("""+str(ext)[1:-1]+"""), 25832))) AS rast FROM stream_network_625125025.nlmrc_testarea_50x50_"""+str(xx)+"""_resamp;""")
     
-        cursor.execute("""SELECT AddRasterConstraints('stream_network_025025050'::name, 'nlmrc_testarea_50x50_"""+str(xx)+"""_"""+str(x)+"""'::name, 'rast'::name,'regular_blocking', 'blocksize');""")
+        cursor.execute("""SELECT AddRasterConstraints('stream_network_625125025'::name, 'nlmrc_testarea_50x50_"""+str(xx)+"""_"""+str(x)+"""'::name, 'rast'::name,'regular_blocking', 'blocksize');""")
 
-        cursor.execute("""UPDATE stream_network_025025050.nlmrc_testarea_50x50_"""+str(xx)+"""_"""+str(x)+""" SET rast = ST_SetSRID(rast,25832);""")
+        cursor.execute("""UPDATE stream_network_625125025.nlmrc_testarea_50x50_"""+str(xx)+"""_"""+str(x)+""" SET rast = ST_SetSRID(rast,25832);""")
 
 #####
 
-        cursor.execute("""CREATE TABLE stream_network_025025050.nlmre_testarea_50x50_"""+str(xx)+"""_"""+str(x)+""" AS SELECT ST_Clip(rast, (ST_SetSRID(ST_MakeEnvelope("""+str(ext)[1:-1]+"""), 25832))) AS rast FROM stream_network_025025050.nlmre_testarea_50x50_"""+str(xx)+"""_resamp;""")
+        cursor.execute("""CREATE TABLE stream_network_625125025.nlmre_testarea_50x50_"""+str(xx)+"""_"""+str(x)+""" AS SELECT ST_Clip(rast, (ST_SetSRID(ST_MakeEnvelope("""+str(ext)[1:-1]+"""), 25832))) AS rast FROM stream_network_625125025.nlmre_testarea_50x50_"""+str(xx)+"""_resamp;""")
     
-        cursor.execute("""SELECT AddRasterConstraints('stream_network_025025050'::name, 'nlmre_testarea_50x50_"""+str(xx)+"""_"""+str(x)+"""'::name, 'rast'::name,'regular_blocking', 'blocksize');""")
+        cursor.execute("""SELECT AddRasterConstraints('stream_network_625125025'::name, 'nlmre_testarea_50x50_"""+str(xx)+"""_"""+str(x)+"""'::name, 'rast'::name,'regular_blocking', 'blocksize');""")
 
-        cursor.execute("""UPDATE stream_network_025025050.nlmre_testarea_50x50_"""+str(xx)+"""_"""+str(x)+""" SET rast = ST_SetSRID(rast,25832);""")
+        cursor.execute("""UPDATE stream_network_625125025.nlmre_testarea_50x50_"""+str(xx)+"""_"""+str(x)+""" SET rast = ST_SetSRID(rast,25832);""")
 
 conn.commit()
 
