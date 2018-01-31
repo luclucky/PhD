@@ -1,10 +1,19 @@
 def testtest(xxxx):
  
-    print('run ' + str(xxxx))
+    ti = time.clock()
+    
+    for x in range(1111111):
+        
+        x = x+1
+ 
+    ti = time.clock() - ti
+    
+    print(ti)
    
 if __name__ == '__main__':
     
     import timeit
+    import time
     
     for xxxx in range(10):
         

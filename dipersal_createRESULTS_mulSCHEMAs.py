@@ -427,8 +427,8 @@ def dispersal_MODEL(inPARA):
 
 def main():
 
-    inSCHEMAs = ['stream_network_025025050', 'stream_network_025050025', 'stream_network_050025025', 'stream_network_033033033']
-    outSCHEMAs = ['sn_025025050_results', 'sn_025050025_results', 'sn_050025025_results', 'sn_033033033_results']
+    inSCHEMAs = ['stream_network_025125625', 'stream_network_025625125', 'stream_network_125025625', 'stream_network_125625025', 'stream_network_625025125', 'stream_network_625125025']
+    outSCHEMAs = ['sn_025125625_results', 'sn_025625125_results', 'sn_125025625_results', 'sn_125625025_results', 'sn_625025125_results', 'sn_625125025_results']
 
     inNLMs = ['habitats_shortpath_red_nlmr_testarea', 'habitats_shortpath_red_nlmrc_testarea', 'habitats_shortpath_red_nlmre_testarea']
     
