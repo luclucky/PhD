@@ -161,6 +161,12 @@ extPROB_perRUN = 0.05
 
 def dispersal_MODEL(inPARA):
     
+    conn = psycopg2.connect("host=localhost port=5432 dbname=DB_PhD user=streib_lucas password=1gis!gis1")
+    cursor = conn.cursor()
+        
+    cursor.execute("""CREATE SCHEMA IF NOT EXISTS """+str(inPARA[2])+""";""")
+    conn.commit()
+    
     inHABs = []
 
     for x in range(25):
@@ -169,17 +175,14 @@ def dispersal_MODEL(inPARA):
 
     for inHAB in inHABs:
             
-        conn = psycopg2.connect("host=localhost port=5432 dbname=DB_PhD user=streib_lucas password=1gis!gis1")
-        cursor = conn.cursor()
-        
         for z in range(10):
              
-            cursor.execute("""SELECT st_extent(geom) FROM dis_pts_2500_10x10."""+str(inHAB)+"""_start_"""+str(z)+""";""")
+            cursor.execute("""SELECT st_extent(geom) FROM dis_pts_2500_10x10_"""+str(inPARA[1][-9:])+"""."""+str(inHAB)+"""_start_"""+str(z)+""";""")
             habitats_extent = cursor.fetchone()
             habitats_extent = re.findall(r"[\w.]+", habitats_extent[0])[1:]
             habitats_extent = [float(i) for i in habitats_extent]
             
-            cursor.execute("""SELECT idS, st_astext(geom) FROM dis_pts_2500_10x10."""+str(inHAB)+"""_start_"""+str(z)+""";""")
+            cursor.execute("""SELECT idS, st_astext(geom) FROM dis_pts_2500_10x10_"""+str(inPARA[1][-9:])+"""."""+str(inHAB)+"""_start_"""+str(z)+""";""")
             xy_pts = cursor.fetchall()
             xy_pts = [[i[0],re.findall(r"[\w']+",i[1])[1:]] for i in xy_pts]
             xy_pts = [[i[0], float(i[1][0]), float(i[1][2])] for i in xy_pts]
@@ -333,6 +336,10 @@ def dispersal_MODEL(inPARA):
                                 else:
                                     
                                     if occhabitats[3][habitats_shortpath_red[1][y]-1] >= habitats_qual[occhabitats[0][habitats_shortpath_red[1][y]-1]-1]*100:
+                                                   
+                                
+                                                   
+                                                   
                                                                 
                                         torem.append(y)
                 
@@ -420,15 +427,16 @@ def dispersal_MODEL(inPARA):
                 print((end - start) / 60)
         
         # close communication with the database
-        cursor.close()
-        conn.close()
+    cursor.close()
+    conn.close()
 
 #####
 
 def main():
 
-    inSCHEMAs = ['stream_network_025125625', 'stream_network_025625125', 'stream_network_125025625', 'stream_network_125625025', 'stream_network_625025125', 'stream_network_625125025']
-    outSCHEMAs = ['sn_025125625_results', 'sn_025625125_results', 'sn_125025625_results', 'sn_125625025_results', 'sn_625025125_results', 'sn_625125025_results']
+    inSCHEMAs = ['stream_network_000050050_linear_02', 'stream_network_025375375_linear_02', 'stream_network_075125125_linear_02', 'stream_network_100000000_linear_02', 'stream_network_050000050_linear_02','stream_network_375025375_linear_02', 'stream_network_125075125_linear_02', 'stream_network_000100000_linear_02', 'stream_network_050050000_linear_02', 'stream_network_375375025_linear_02','stream_network_125125075_linear_02', 'stream_network_000000100_linear_02']
+    
+    outSCHEMAs = ['stream_network_000050050_linear_02_results', 'stream_network_025375375_linear_02_results', 'stream_network_075125125_linear_02_results', 'stream_network_100000000_linear_02_results', 'stream_network_050000050_linear_02_results','stream_network_375025375_linear_02_results', 'stream_network_125075125_linear_02_results', 'stream_network_000100000_linear_02_results', 'stream_network_050050000_linear_02_results', 'stream_network_375375025_linear_02_results','stream_network_125125075_linear_02_results', 'stream_network_000000100_linear_02_results']
 
     inNLMs = ['habitats_shortpath_red_nlmr_testarea', 'habitats_shortpath_red_nlmrc_testarea', 'habitats_shortpath_red_nlmre_testarea']
     
@@ -446,7 +454,7 @@ def main():
     pool.close()
     pool.join()
     
-if __name__ == '__main__':
+if __name__ in ['__builtin__', '__main__']:
     
     main()
 

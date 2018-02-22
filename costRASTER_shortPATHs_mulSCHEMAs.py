@@ -42,6 +42,9 @@ def costRASTER_shortPATHs(inSCHEMA):
     conn = psycopg2.connect("host=localhost port=5432 dbname=DB_PhD user=streib_lucas password=1gis!gis1")
     cursor = conn.cursor()
     
+    cursor.execute("""CREATE SCHEMA IF NOT EXISTS """+str(inSCHEMA)+""";""")
+    conn.commit()
+
     cursor.execute("""SET postgis.gdal_enabled_drivers = 'ENABLE_ALL';""")
     
     numRandPTs = 10
@@ -57,7 +60,7 @@ def costRASTER_shortPATHs(inSCHEMA):
             
             print("RUN:" + str(zz))
         
-            cursor.execute("""SELECT start, start_xy, aim, aim_xy, distance FROM dis_pts_2500_10x10.dist_pts_2500_"""+(str(z))+"""_start_"""+str(zz)+""";""")
+            cursor.execute("""SELECT start, start_xy, aim, aim_xy, distance FROM dis_pts_2500_10x10_linear_02.dist_pts_2500_"""+(str(z))+"""_start_"""+str(zz)+""";""")
             
             dist_pts_2500 =  cursor.fetchall()
             
@@ -94,7 +97,7 @@ def costRASTER_shortPATHs(inSCHEMA):
             
                 print(xx)
                                                             
-                cursor.execute("""SELECT ST_AsGDALRaster(rast, 'GTiff') FROM """+str(inSCHEMA)+""".nlmr_testarea_50x50_"""+str(xx)+"""_"""+str(z)+""";""")
+                cursor.execute("""SELECT ST_AsGDALRaster(rast, 'GTiff') FROM """+str(inSCHEMA[:-10])+""".nlmr_testarea_50x50_"""+str(xx)+"""_"""+str(z)+""";""")
                 
                 vsipath = '/vsimem/from_postgis'
                 
@@ -143,6 +146,8 @@ def costRASTER_shortPATHs(inSCHEMA):
                     mPTs = mPTs[:-1]
         
                     cursor.execute("""INSERT INTO """+str(inSCHEMA)+""".habitats_shortpath_red_nlmr_testarea_50x50_"""+str(xx)+"""_"""+str(z)+"""_start_"""+str(zz)+""" (start, aim, geom, costs) VALUES ("""+str(dist_pts_2500_red[xxx][0])+""", """+str(dist_pts_2500_red[xxx][2])+""", ST_SetSRID(ST_MakeLine(ARRAY["""+str(mPTs)+"""]), 25832), """+str(weight)+""");""") 
+                    
+                    cursor.execute("""UPDATE """+str(inSCHEMA)+""".habitats_shortpath_red_nlmr_testarea_50x50_"""+str(xx)+"""_"""+str(z)+"""_start_"""+str(zz)+""" SET costs = 50 WHERE costs = 0;""")
         
                     conn.commit()
         
@@ -152,7 +157,7 @@ def costRASTER_shortPATHs(inSCHEMA):
             
                 print(xx)
                                                             
-                cursor.execute("""SELECT ST_AsGDALRaster(rast, 'GTiff') FROM """+str(inSCHEMA)+""".nlmrc_testarea_50x50_"""+str(xx)+"""_"""+str(z)+""";""")
+                cursor.execute("""SELECT ST_AsGDALRaster(rast, 'GTiff') FROM """+str(inSCHEMA[:-10])+""".nlmrc_testarea_50x50_"""+str(xx)+"""_"""+str(z)+""";""")
                 
                 vsipath = '/vsimem/from_postgis'
                 
@@ -201,6 +206,8 @@ def costRASTER_shortPATHs(inSCHEMA):
                     mPTs = mPTs[:-1]
         
                     cursor.execute("""INSERT INTO """+str(inSCHEMA)+""".habitats_shortpath_red_nlmrc_testarea_50x50_"""+str(xx)+"""_"""+str(z)+"""_start_"""+str(zz)+""" (start, aim, geom, costs) VALUES ("""+str(dist_pts_2500_red[xxx][0])+""", """+str(dist_pts_2500_red[xxx][2])+""", ST_SetSRID(ST_MakeLine(ARRAY["""+str(mPTs)+"""]), 25832), """+str(weight)+""");""") 
+                    
+                    cursor.execute("""UPDATE """+str(inSCHEMA)+""".habitats_shortpath_red_nlmrc_testarea_50x50_"""+str(xx)+"""_"""+str(z)+"""_start_"""+str(zz)+""" SET costs = 50 WHERE costs = 0;""")
         
                     conn.commit()
         
@@ -210,7 +217,7 @@ def costRASTER_shortPATHs(inSCHEMA):
             
                 print(xx)
                                                             
-                cursor.execute("""SELECT ST_AsGDALRaster(rast, 'GTiff') FROM """+str(inSCHEMA)+""".nlmre_testarea_50x50_"""+str(xx)+"""_"""+str(z)+""";""")
+                cursor.execute("""SELECT ST_AsGDALRaster(rast, 'GTiff') FROM """+str(inSCHEMA[:-10])+""".nlmre_testarea_50x50_"""+str(xx)+"""_"""+str(z)+""";""")
                 
                 vsipath = '/vsimem/from_postgis'
                 
@@ -260,13 +267,15 @@ def costRASTER_shortPATHs(inSCHEMA):
         
                     cursor.execute("""INSERT INTO """+str(inSCHEMA)+""".habitats_shortpath_red_nlmre_testarea_50x50_"""+str(xx)+"""_"""+str(z)+"""_start_"""+str(zz)+""" (start, aim, geom, costs) VALUES ("""+str(dist_pts_2500_red[xxx][0])+""", """+str(dist_pts_2500_red[xxx][2])+""", ST_SetSRID(ST_MakeLine(ARRAY["""+str(mPTs)+"""]), 25832), """+str(weight)+""");""") 
         
+                    cursor.execute("""UPDATE """+str(inSCHEMA)+""".habitats_shortpath_red_nlmre_testarea_50x50_"""+str(xx)+"""_"""+str(z)+"""_start_"""+str(zz)+""" SET costs = 50 WHERE costs = 0;""")
+        
                     conn.commit()
 
 def main():
 
-    inSCHEMAs = ['stream_network_025625125', 'stream_network_125025625', 'stream_network_125625025', 'stream_network_625025125', 'stream_network_625125025']
+    inSCHEMAs = ['stream_network_000050050_linear_02', 'stream_network_025375375_linear_02', 'stream_network_075125125_linear_02', 'stream_network_100000000_linear_02', 'stream_network_050000050_linear_02','stream_network_375025375_linear_02', 'stream_network_125075125_linear_02', 'stream_network_000100000_linear_02', 'stream_network_050050000_linear_02', 'stream_network_375375025_linear_02','stream_network_125125075_linear_02', 'stream_network_000000100_linear_02']
 
-    pool = multiprocessing.Pool(processes=5)
+    pool = multiprocessing.Pool(processes=12)
     pool.map(costRASTER_shortPATHs, inSCHEMAs)
 
     pool.close()
