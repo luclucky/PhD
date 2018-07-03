@@ -152,8 +152,8 @@ ids = [i[0] for i in ids]
  
 for xx in ids:
     
-    cursor.execute("""CREATE TABLE dis_pts_2500_10x10_random_02.pts_habitat_red_"""+str(xx)+""" AS SELECT * FROM dis_pts_2500_10x10.pts_habitat_red_"""+str(xx)+""";""")
-    cursor.execute("""CREATE TABLE dis_pts_2500_10x10_random_02.dist_pts_2500_"""+str(xx)+""" AS SELECT * FROM dis_pts_2500_10x10.dist_pts_2500_"""+str(xx)+""";""")
+    cursor.execute("""CREATE TABLE dis_pts_2500_10x10_random_02.pts_habitat_red_"""+str(xx)+""" AS SELECT * FROM dis_pts_2500_10x10_random_01.pts_habitat_red_"""+str(xx)+""";""")
+    cursor.execute("""CREATE TABLE dis_pts_2500_10x10_random_02.dist_pts_2500_"""+str(xx)+""" AS SELECT * FROM dis_pts_2500_10x10_random_01.dist_pts_2500_"""+str(xx)+""";""")
     
     conn.commit()
 
@@ -246,8 +246,8 @@ ids = [i[0] for i in ids]
  
 for xx in ids:
     
-    cursor.execute("""CREATE TABLE dis_pts_2500_10x10_clustr_02.pts_habitat_red_"""+str(xx)+""" AS SELECT * FROM dis_pts_2500_10x10.pts_habitat_red_"""+str(xx)+""";""")
-    cursor.execute("""CREATE TABLE dis_pts_2500_10x10_clustr_02.dist_pts_2500_"""+str(xx)+""" AS SELECT * FROM dis_pts_2500_10x10.dist_pts_2500_"""+str(xx)+""";""")
+    cursor.execute("""CREATE TABLE dis_pts_2500_10x10_clustr_02.pts_habitat_red_"""+str(xx)+""" AS SELECT * FROM dis_pts_2500_10x10_random_01.pts_habitat_red_"""+str(xx)+""";""")
+    cursor.execute("""CREATE TABLE dis_pts_2500_10x10_clustr_02.dist_pts_2500_"""+str(xx)+""" AS SELECT * FROM dis_pts_2500_10x10_random_01.dist_pts_2500_"""+str(xx)+""";""")
     
     conn.commit()
 
@@ -329,8 +329,8 @@ ids = [i[0] for i in ids]
  
 for xx in ids:
     
-    cursor.execute("""CREATE TABLE dis_pts_2500_10x10_linear_02.pts_habitat_red_"""+str(xx)+""" AS SELECT * FROM dis_pts_2500_10x10.pts_habitat_red_"""+str(xx)+""";""")
-    cursor.execute("""CREATE TABLE dis_pts_2500_10x10_linear_02.dist_pts_2500_"""+str(xx)+""" AS SELECT * FROM dis_pts_2500_10x10.dist_pts_2500_"""+str(xx)+""";""")
+    cursor.execute("""CREATE TABLE dis_pts_2500_10x10_linear_02.pts_habitat_red_"""+str(xx)+""" AS SELECT * FROM dis_pts_2500_10x10_random_01.pts_habitat_red_"""+str(xx)+""";""")
+    cursor.execute("""CREATE TABLE dis_pts_2500_10x10_linear_02.dist_pts_2500_"""+str(xx)+""" AS SELECT * FROM dis_pts_2500_10x10_random_01.dist_pts_2500_"""+str(xx)+""";""")
     
     conn.commit()
 

@@ -167,6 +167,11 @@ def dispersal_MODEL(inPARA):
     cursor.execute("""CREATE SCHEMA IF NOT EXISTS """+str(inPARA[2])+""";""")
     conn.commit()
     
+    cursor.execute("""SELECT tablename FROM pg_tables WHERE schemaname = '"""+str(inPARA[2])+"""';""")
+    procTABs = cursor.fetchall()
+
+    procTABs = [i[0] for i in procTABs] 
+
     inHABs = []
 
     for x in range(25):
@@ -188,7 +193,7 @@ def dispersal_MODEL(inPARA):
             xy_pts = [[i[0], float(i[1][0]), float(i[1][2])] for i in xy_pts]
             xy_pts.sort()
             
-            cursor.execute("""SELECT * FROM dis_pts_2500_10x10."""+str(inHAB)+"""_starthabitas;""")
+            cursor.execute("""SELECT * FROM dis_pts_2500_10x10_"""+str(inPARA[1][-9:])+"""."""+str(inHAB)+"""_starthabitas;""")
             list_SH = cursor.fetchall()
             list_SH = np.array(list_SH).T
 
@@ -213,7 +218,11 @@ def dispersal_MODEL(inPARA):
                 
                 habitats_qual = np.array(len(xy_pts) * [0.625])
                 
-                cursor.execute("""DROP TABLE IF EXISTS """+str(inPARA[2])+"""."""+str(inPARA[0])+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[16:])+"""_start_"""+str(z)+""";""")
+#                 cursor.execute("""DROP TABLE IF EXISTS """+str(inPARA[2])+"""."""+str(inPARA[0])+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[16:])+"""_start_"""+str(z)+""";""")
+
+                if str(inPARA[0])+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[16:])+"""_start_"""+str(z) in procTABs:
+                    continue
+                
                 cursor.execute("""CREATE TABLE """+str(inPARA[2])+"""."""+str(inPARA[0])+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[16:])+"""_start_"""+str(z)+""" (pts_id BIGINT, geom GEOMETRY, hq FLOAT);""")
                 
                 toINS_pts = np.array(xy_pts)
@@ -434,10 +443,10 @@ def dispersal_MODEL(inPARA):
 
 def main():
 
-    inSCHEMAs = ['stream_network_000050050_linear_02', 'stream_network_025375375_linear_02', 'stream_network_075125125_linear_02', 'stream_network_100000000_linear_02', 'stream_network_050000050_linear_02','stream_network_375025375_linear_02', 'stream_network_125075125_linear_02', 'stream_network_000100000_linear_02', 'stream_network_050050000_linear_02', 'stream_network_375375025_linear_02','stream_network_125125075_linear_02', 'stream_network_000000100_linear_02']
+    inSCHEMAs = ['stream_network_000050050_linear_01', 'stream_network_025375375_linear_01', 'stream_network_075125125_linear_01', 'stream_network_100000000_linear_01', 'stream_network_050000050_linear_01','stream_network_375025375_linear_01', 'stream_network_125075125_linear_01', 'stream_network_000100000_linear_01', 'stream_network_050050000_linear_01', 'stream_network_375375025_linear_01','stream_network_125125075_linear_01', 'stream_network_000000100_linear_01', 'stream_network_050025025_linear_01', 'stream_network_025050025_linear_01', 'stream_network_025025050_linear_01']
     
-    outSCHEMAs = ['stream_network_000050050_linear_02_results', 'stream_network_025375375_linear_02_results', 'stream_network_075125125_linear_02_results', 'stream_network_100000000_linear_02_results', 'stream_network_050000050_linear_02_results','stream_network_375025375_linear_02_results', 'stream_network_125075125_linear_02_results', 'stream_network_000100000_linear_02_results', 'stream_network_050050000_linear_02_results', 'stream_network_375375025_linear_02_results','stream_network_125125075_linear_02_results', 'stream_network_000000100_linear_02_results']
-
+    outSCHEMAs = ['stream_network_000050050_linear_01_results', 'stream_network_025375375_linear_01_results', 'stream_network_075125125_linear_01_results', 'stream_network_100000000_linear_01_results', 'stream_network_050000050_linear_01_results','stream_network_375025375_linear_01_results', 'stream_network_125075125_linear_01_results', 'stream_network_000100000_linear_01_results', 'stream_network_050050000_linear_01_results', 'stream_network_375375025_linear_01_results','stream_network_125125075_linear_01_results', 'stream_network_000000100_linear_01_results', 'stream_network_050025025_linear_01_results', 'stream_network_025050025_linear_01_results', 'stream_network_025025050_linear_01_results']
+     
     inNLMs = ['habitats_shortpath_red_nlmr_testarea', 'habitats_shortpath_red_nlmrc_testarea', 'habitats_shortpath_red_nlmre_testarea']
     
     inPARAs = []

@@ -60,7 +60,7 @@ def costRASTER_shortPATHs(inSCHEMA):
             
             print("RUN:" + str(zz))
         
-            cursor.execute("""SELECT start, start_xy, aim, aim_xy, distance FROM dis_pts_2500_10x10_linear_02.dist_pts_2500_"""+(str(z))+"""_start_"""+str(zz)+""";""")
+            cursor.execute("""SELECT start, start_xy, aim, aim_xy, distance FROM dis_pts_2500_10x10_linear_01.dist_pts_2500_"""+(str(z))+"""_start_"""+str(zz)+""";""")
             
             dist_pts_2500 =  cursor.fetchall()
             
@@ -97,7 +97,7 @@ def costRASTER_shortPATHs(inSCHEMA):
             
                 print(xx)
                                                             
-                cursor.execute("""SELECT ST_AsGDALRaster(rast, 'GTiff') FROM """+str(inSCHEMA[:-10])+""".nlmr_testarea_50x50_"""+str(xx)+"""_"""+str(z)+""";""")
+                cursor.execute("""SELECT ST_AsGDALRaster(rast, 'GTiff') FROM """+str(inSCHEMA[:-10])+"""_random_01.nlmr_testarea_50x50_"""+str(xx)+"""_"""+str(z)+""";""")
                 
                 vsipath = '/vsimem/from_postgis'
                 
@@ -117,6 +117,8 @@ def costRASTER_shortPATHs(inSCHEMA):
                 
                 cost_raster.RasterXSize
         
+                cursor.execute("""DROP TABLE IF EXISTS """+str(inSCHEMA)+""".habitats_shortpath_red_nlmr_testarea_50x50_"""+str(xx)+"""_"""+str(z)+"""_start_"""+str(zz)+""";""")
+
                 cursor.execute("""CREATE TABLE """+str(inSCHEMA)+""".habitats_shortpath_red_nlmr_testarea_50x50_"""+str(xx)+"""_"""+str(z)+"""_start_"""+str(zz)+""" (start bigint, aim bigint, geom geometry, costs double precision);""")
                 
                 for xxx in range(len(dist_pts_2500_red)):
@@ -157,7 +159,7 @@ def costRASTER_shortPATHs(inSCHEMA):
             
                 print(xx)
                                                             
-                cursor.execute("""SELECT ST_AsGDALRaster(rast, 'GTiff') FROM """+str(inSCHEMA[:-10])+""".nlmrc_testarea_50x50_"""+str(xx)+"""_"""+str(z)+""";""")
+                cursor.execute("""SELECT ST_AsGDALRaster(rast, 'GTiff') FROM """+str(inSCHEMA[:-10])+"""_random_01.nlmrc_testarea_50x50_"""+str(xx)+"""_"""+str(z)+""";""")
                 
                 vsipath = '/vsimem/from_postgis'
                 
@@ -177,6 +179,8 @@ def costRASTER_shortPATHs(inSCHEMA):
                 
                 cost_raster.RasterXSize
         
+                cursor.execute("""DROP TABLE IF EXISTS """+str(inSCHEMA)+""".habitats_shortpath_red_nlmrc_testarea_50x50_"""+str(xx)+"""_"""+str(z)+"""_start_"""+str(zz)+""";""")
+
                 cursor.execute("""CREATE TABLE """+str(inSCHEMA)+""".habitats_shortpath_red_nlmrc_testarea_50x50_"""+str(xx)+"""_"""+str(z)+"""_start_"""+str(zz)+""" (start bigint, aim bigint, geom geometry, costs double precision);""")
                 
                 for xxx in range(len(dist_pts_2500_red)):
@@ -217,7 +221,7 @@ def costRASTER_shortPATHs(inSCHEMA):
             
                 print(xx)
                                                             
-                cursor.execute("""SELECT ST_AsGDALRaster(rast, 'GTiff') FROM """+str(inSCHEMA[:-10])+""".nlmre_testarea_50x50_"""+str(xx)+"""_"""+str(z)+""";""")
+                cursor.execute("""SELECT ST_AsGDALRaster(rast, 'GTiff') FROM """+str(inSCHEMA[:-10])+"""_random_01.nlmre_testarea_50x50_"""+str(xx)+"""_"""+str(z)+""";""")
                 
                 vsipath = '/vsimem/from_postgis'
                 
@@ -236,6 +240,8 @@ def costRASTER_shortPATHs(inSCHEMA):
                 cr_gt = cost_raster.GetGeoTransform()
                 
                 cost_raster.RasterXSize
+        
+                cursor.execute("""DROP TABLE IF EXISTS """+str(inSCHEMA)+""".habitats_shortpath_red_nlmre_testarea_50x50_"""+str(xx)+"""_"""+str(z)+"""_start_"""+str(zz)+""";""")
         
                 cursor.execute("""CREATE TABLE """+str(inSCHEMA)+""".habitats_shortpath_red_nlmre_testarea_50x50_"""+str(xx)+"""_"""+str(z)+"""_start_"""+str(zz)+""" (start bigint, aim bigint, geom geometry, costs double precision);""")
                 
@@ -273,7 +279,7 @@ def costRASTER_shortPATHs(inSCHEMA):
 
 def main():
 
-    inSCHEMAs = ['stream_network_000050050_linear_02', 'stream_network_025375375_linear_02', 'stream_network_075125125_linear_02', 'stream_network_100000000_linear_02', 'stream_network_050000050_linear_02','stream_network_375025375_linear_02', 'stream_network_125075125_linear_02', 'stream_network_000100000_linear_02', 'stream_network_050050000_linear_02', 'stream_network_375375025_linear_02','stream_network_125125075_linear_02', 'stream_network_000000100_linear_02']
+    inSCHEMAs = ['stream_network_000050050_linear_01', 'stream_network_025375375_linear_01', 'stream_network_075125125_linear_01', 'stream_network_100000000_linear_01', 'stream_network_050000050_linear_01','stream_network_375025375_linear_01', 'stream_network_125075125_linear_01', 'stream_network_000100000_linear_01', 'stream_network_050050000_linear_01', 'stream_network_375375025_linear_01','stream_network_125125075_linear_01', 'stream_network_000000100_linear_01', 'stream_network_050025025_linear_01', 'stream_network_025050025_linear_01', 'stream_network_025025050_linear_01']
 
     pool = multiprocessing.Pool(processes=12)
     pool.map(costRASTER_shortPATHs, inSCHEMAs)
