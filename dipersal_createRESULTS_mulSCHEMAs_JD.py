@@ -161,10 +161,10 @@ extPROB_perRUN = 0.05
 
 def dispersal_MODEL(inPARA):
     
-    conn = psycopg2.connect("host=localhost port=5432 dbname=DB_PhD user=streib_lucas password=1gis!gis1")
+    conn = psycopg2.connect("host=localhost port=5433 dbname=gastdb_01 user=postgres password=rA3z5sNL")
     cursor = conn.cursor()
         
-    cursor.execute("""CREATE SCHEMA IF NOT EXISTS """+str(inPARA[2])+""";""")
+    cursor.execute("""CREATE SCHEMA IF NOT EXISTS """+str(inPARA[2])+"""_new;""")
     conn.commit()
     
     cursor.execute("""SELECT tablename FROM pg_tables WHERE schemaname = '"""+str(inPARA[2])+"""';""")
@@ -180,7 +180,7 @@ def dispersal_MODEL(inPARA):
 
     for inHAB in inHABs:
             
-        for z in range(10):
+        for z in range(3):
              
             cursor.execute("""SELECT st_extent(geom) FROM dis_pts_2500_10x10_"""+str(inPARA[1][-9:])+"""."""+str(inHAB)+"""_start_"""+str(z)+""";""")
             habitats_extent = cursor.fetchone()
@@ -201,7 +201,7 @@ def dispersal_MODEL(inPARA):
 #             raster_MD = cursor.fetchall()
 #             raster_MD = [float(x) for x in raster_MD[0][1][1:-1].split(',')]
                 
-            for zz in range(10):
+            for zz in range(3):
                 
                 start = time.time()
         
@@ -239,7 +239,7 @@ def dispersal_MODEL(inPARA):
                 
                 conn.commit()
                 
-                for xxxx in range(10):
+                for xxxx in range(3):
                     
                     print(str(inPARA[1])+""": """+str(inPARA[0])+"""_50x50_"""+str(zz)+"""_"""+str(inHAB[16:])+"""_start_"""+str(z)+ ': run ' + str(xxxx))
                         
@@ -441,11 +441,11 @@ def dispersal_MODEL(inPARA):
 
 def main():
 
-    inSCHEMAs = ['stream_network_000050050_linear_02', 'stream_network_025375375_linear_02', 'stream_network_075125125_linear_02', 'stream_network_100000000_linear_02', 'stream_network_050000050_linear_02','stream_network_375025375_linear_02', 'stream_network_125075125_linear_02', 'stream_network_000100000_linear_02', 'stream_network_050050000_linear_02', 'stream_network_375375025_linear_02','stream_network_125125075_linear_02', 'stream_network_000000100_linear_02', 'stream_network_050025025_linear_02', 'stream_network_025050025_linear_02', 'stream_network_025025050_linear_02']
+    inSCHEMAs = ['stream_network_000400600_random_02','stream_network_000800200_random_02','stream_network_100200700_random_02','stream_network_125150725_random_02','stream_network_150100750_random_02','stream_network_175050775_random_02','stream_network_200000800_random_02','stream_network_200400400_random_02','stream_network_200800000_random_02','stream_network_250300450_random_02','stream_network_300200500_random_02','stream_network_350100550_random_02','stream_network_350500150_random_02','stream_network_400000600_random_02','stream_network_400400200_random_02','stream_network_450300250_random_02','stream_network_500200300_random_02','stream_network_600000400_random_02','stream_network_600400000_random_02','stream_network_675250075_random_02','stream_network_700200100_random_02','stream_network_725150125_random_02','stream_network_750100150_random_02','stream_network_800000200_random_02']
     
-    outSCHEMAs = ['stream_network_000050050_linear_02_results', 'stream_network_025375375_linear_02_results', 'stream_network_075125125_linear_02_results', 'stream_network_100000000_linear_02_results', 'stream_network_050000050_linear_02_results','stream_network_375025375_linear_02_results', 'stream_network_125075125_linear_02_results', 'stream_network_000100000_linear_02_results', 'stream_network_050050000_linear_02_results', 'stream_network_375375025_linear_02_results','stream_network_125125075_linear_02_results', 'stream_network_000000100_linear_02_results', 'stream_network_050025025_linear_02_results', 'stream_network_025050025_linear_02_results', 'stream_network_025025050_linear_02_results']
+    outSCHEMAs = ['stream_network_000400600_random_02_results','stream_network_000800200_random_02_results','stream_network_100200700_random_02_results','stream_network_125150725_random_02_results','stream_network_150100750_random_02_results','stream_network_175050775_random_02_results','stream_network_200000800_random_02_results','stream_network_200400400_random_02_results','stream_network_200800000_random_02_results','stream_network_250300450_random_02_results','stream_network_300200500_random_02_results','stream_network_350100550_random_02_results','stream_network_350500150_random_02_results','stream_network_400000600_random_02_results','stream_network_400400200_random_02_results','stream_network_450300250_random_02_results','stream_network_500200300_random_02_results','stream_network_600000400_random_02_results','stream_network_600400000_random_02_results','stream_network_675250075_random_02_results','stream_network_700200100_random_02_results','stream_network_725150125_random_02_results','stream_network_750100150_random_02_results','stream_network_800000200_random_02_results']
      
-    inNLMs = ['habitats_shortpath_red_nlmr_testarea', 'habitats_shortpath_red_nlmrc_testarea', 'habitats_shortpath_red_nlmre_testarea']
+    inNLMs = ['habitats_shortpath_red_nlmr_testarea', 'habitats_shortpath_red_nlmrc_testarea']
     
     inPARAs = []
     
@@ -455,7 +455,7 @@ def main():
         
             inPARAs.append([inNLMs[a],inSCHEMAs[aa],outSCHEMAs[aa]])
         
-    pool = multiprocessing.Pool(processes=12)
+    pool = multiprocessing.Pool(processes=6)
     pool.map(dispersal_MODEL, inPARAs)
 
     pool.close()

@@ -34,10 +34,10 @@ cursor.execute("""SELECT ST_MetaData(rast) As md FROM stream_network.rlp_stream_
 raster_MD = cursor.fetchall()
 raster_MD = [float(xx) for xx in raster_MD[0][0][1:-1].split(',')]
 
-nCOL = raster_MD[2]
-nROW = raster_MD[3]
+nCOL = int(raster_MD[2])
+nROW = int(raster_MD[3])
 
-grid = np.zeros((raster_MD[2], raster_MD[3]))
+grid = np.zeros((nCOL, nROW))
     
 X_DIM = np.arange(grid.shape[0])
 Y_DIM = np.arange(grid.shape[1])
@@ -59,7 +59,7 @@ vsipath = '/vsimem/from_postgis'
 ds = band = None
 gdal.Unlink(vsipath)
 
-cursor.execute("""SET postgis.gdal_enabled_drivers = 'ENABLE_ALL';""")
+# cursor.execute("""SET postgis.gdal_enabled_drivers = 'ENABLE_ALL';""")
 
 cursor.execute("""SELECT ST_AsGDALRaster(rast, 'GTiff') FROM stream_network.rlp_stream_rast_testarea_50x50;""")
 gdal.FileFromMemBuffer(vsipath, bytes(cursor.fetchone()[0]))
